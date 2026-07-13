@@ -52,6 +52,7 @@ set(HAL_SOURCES
     ${HAL_DRV}/Src/stm32f1xx_hal_i2c.c
     ${HAL_DRV}/Src/stm32f1xx_hal_uart.c
     ${HAL_DRV}/Src/stm32f1xx_hal_tim.c
+    ${HAL_DRV}/Src/stm32f1xx_hal_tim_ex.c     # HAL_TIM_IRQHandler 引用的 TIMEx 弱回调
     ${HAL_DRV}/Src/stm32f1xx_hal_flash.c
     ${HAL_DRV}/Src/stm32f1xx_hal_flash_ex.c
 )
