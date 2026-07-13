@@ -61,8 +61,10 @@ file(GLOB BSP_SOURCES    ${CMAKE_SOURCE_DIR}/bsp/*.c)
 file(GLOB APP_SOURCES    ${CMAKE_SOURCE_DIR}/app/*.c)
 file(GLOB CORE_SOURCES   ${CMAKE_SOURCE_DIR}/core/src/*.c)
 set(MODULE_SOURCES "")
+set(MODULE_INC_DIRS "")
 foreach(m ${ALL_MODULES})
     list(APPEND MODULE_SOURCES ${CMAKE_SOURCE_DIR}/modules/${m}/${m}.c)
+    list(APPEND MODULE_INC_DIRS ${CMAKE_SOURCE_DIR}/modules/${m})  # 每个模块头在各自子目录
 endforeach()
 
 # 启动文件与 system_stm32f1xx.c 直接采用 CubeF1 官方模板（避免手写汇编出错）。
@@ -86,8 +88,10 @@ target_include_directories(firmware PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/algorithms
     ${CMAKE_SOURCE_DIR}/core/include
+    ${CMAKE_SOURCE_DIR}/app
     ${CMAKE_SOURCE_DIR}/bsp
     ${CMAKE_SOURCE_DIR}/modules
+    ${MODULE_INC_DIRS}
     ${HAL_DRV}/Inc
     ${CMSIS}/Device/ST/STM32F1xx/Include
     ${CMSIS}/Include
