@@ -25,3 +25,7 @@ Thumbs.db
 
 # HAL 由 scripts/fetch_hal.sh 按需获取，不入库
 /core/STM32CubeF1/
+.clangd
+.settings/**
+.spec-workflow/**
+.vscode/**
