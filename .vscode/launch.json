@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "调试固件 (OpenOCD + ST-Link)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "openocd",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/stm32/firmware.elf",
+      "device": "STM32F103C8",
+      "interface": "swd",
+      "configFiles": [ "interface/stlink.cfg", "target/stm32f1x.cfg" ],
+      "runToEntryPoint": "main"
+    }
+  ]
+}

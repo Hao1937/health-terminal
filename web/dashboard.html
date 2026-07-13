@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康体测终端 · Web 看板</title>
+<style>
+  :root { --bg:#0f1420; --card:#1b2333; --fg:#e8eef7; --accent:#4cc2ff; --muted:#8a97ad; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--fg); padding:16px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:14px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  button { background:var(--accent); color:#04121d; border:0; border-radius:10px;
+           padding:10px 16px; font-size:15px; font-weight:600; }
+  button.ghost { background:#2a3550; color:var(--fg); }
+  button:disabled { opacity:.5; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .card { background:var(--card); border-radius:14px; padding:14px; }
+  .card .k { color:var(--muted); font-size:13px; }
+  .card .v { font-size:26px; font-weight:700; margin-top:6px; }
+  .card .u { color:var(--muted); font-size:12px; margin-left:4px; }
+  .score { grid-column:1/-1; text-align:center; }
+  .score .v { font-size:44px; color:var(--accent); }
+  #log { margin-top:16px; background:#0a0e17; border-radius:10px; padding:10px;
+         font:12px/1.5 ui-monospace,Consolas,monospace; color:#9fb3c8; height:150px;
+         overflow:auto; white-space:pre-wrap; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px;
+          background:#2a3550; color:var(--muted); }
+</style>
+</head>
+<body>
+  <h1>多维度智能健康体测终端 <span class="pill" id="conn">未连接</span></h1>
+  <div class="sub">Web Bluetooth 单页看板 · 数据帧格式与 include/health_record.h 严格一致 · 安卓 Chrome 可用</div>
+
+  <div class="bar">
+    <button id="btnConnect">连接 BLE 设备</button>
+    <button id="btnDisconnect" class="ghost" disabled>断开</button>
+    <button id="btnDemo" class="ghost">演示（假数据）</button>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="card"><div class="k">身高</div><div class="v"><span id="height">--</span><span class="u">cm</span></div></div>
+    <div class="card"><div class="k">体重</div><div class="v"><span id="weight">--</span><span class="u">kg</span></div></div>
+    <div class="card"><div class="k">BMI</div><div class="v"><span id="bmi">--</span></div></div>
+    <div class="card"><div class="k">体脂率</div><div class="v"><span id="bodyfat">--</span><span class="u">%</span></div></div>
+    <div class="card"><div class="k">心率</div><div class="v"><span id="hr">--</span><span class="u">bpm</span></div></div>
+    <div class="card"><div class="k">血氧</div><div class="v"><span id="spo2">--</span><span class="u">%</span></div></div>
+    <div class="card"><div class="k">平衡晃动指数</div><div class="v"><span id="balance">--</span></div></div>
+    <div class="card"><div class="k">握力</div><div class="v"><span id="grip">--</span><span class="u">kg</span></div></div>
+    <div class="card"><div class="k">反应时间</div><div class="v"><span id="reaction">--</span><span class="u">ms</span></div></div>
+    <div class="card score"><div class="k">综合健康评分</div><div class="v"><span id="score">--</span><span class="u">/100</span></div></div>
+  </div>
+
+  <div id="log"></div>
+
+<script>
+/* =====================================================================
+ *  数据帧 / 记录格式 —— 必须与 include/health_record.h 逐字节对齐
+ *  帧: [AA][55][TYPE][LEN lo][LEN hi][PAYLOAD(LEN)][CRC lo][CRC hi]  全小端
+ *  CRC16-CCITT(poly 0x1021, init 0xFFFF) 覆盖 [TYPE..PAYLOAD]
+ *  记录 52 字节，内部 crc16 覆盖前 48 字节
+ * ===================================================================== */
+const SOF0 = 0xAA, SOF1 = 0x55;
+const FRAME_TYPE_RECORD = 0x01;
+const RECORD_SIZE = 52;
+const RECORD_VERSION = 0x01;
+
+// HM-10 / JDY-23 常见透传服务与特征 UUID
+const BLE_SERVICE = 0xFFE0;
+const BLE_CHAR    = 0xFFE1;
+
+function log(msg){
+  const el = document.getElementById('log');
+  el.textContent += msg + "\n";
+  el.scrollTop = el.scrollHeight;
+}
+
+function crc16_ccitt(bytes){
+  let crc = 0xFFFF;
+  for (let i=0;i<bytes.length;i++){
+    crc ^= bytes[i] << 8;
+    for (let b=0;b<8;b++){
+      crc = (crc & 0x8000) ? ((crc<<1) ^ 0x1021) & 0xFFFF : (crc<<1) & 0xFFFF;
+    }
+  }
+  return crc & 0xFFFF;
+}
+
+// 解析一条记录（DataView 已定位到 payload 起点），返回对象或 null（CRC 不符）
+function parseRecord(dv, off){
+  const version = dv.getUint16(off+0, true);
+  if (version !== RECORD_VERSION) { log("记录版本不符: "+version); return null; }
+  // 记录自带 CRC 校验（覆盖前 48 字节）
+  const raw = new Uint8Array(dv.buffer, dv.byteOffset+off, RECORD_SIZE);
+  const recCrc = dv.getUint16(off+48, true);
+  if (crc16_ccitt(raw.subarray(0,48)) !== recCrc){ log("记录 CRC 失败"); return null; }
+  return {
+    timestamp:   dv.getUint32(off+4, true),
+    height_mm:   dv.getInt32(off+8, true),
+    weight_g:    dv.getInt32(off+12, true),
+    bmi_x100:    dv.getInt32(off+16, true),
+    bodyfat_x10: dv.getInt32(off+20, true),
+    hr_bpm:      dv.getInt32(off+24, true),
+    spo2_x10:    dv.getInt32(off+28, true),
+    balance_x10: dv.getInt32(off+32, true),
+    grip_kg_x10: dv.getInt32(off+36, true),
+    reaction_ms: dv.getInt32(off+40, true),
+    score:       dv.getInt32(off+44, true),
+  };
+}
+
+const INVALID = 0x7FFFFFFF;
+function fmt(v, scale){ return v === INVALID ? "--" : (scale ? (v/scale).toFixed(1) : String(v)); }
+
+function render(r){
+  document.getElementById('height').textContent   = fmt(r.height_mm, 10);
+  document.getElementById('weight').textContent   = fmt(r.weight_g, 1000);
+  document.getElementById('bmi').textContent      = fmt(r.bmi_x100, 100);
+  document.getElementById('bodyfat').textContent  = fmt(r.bodyfat_x10, 10);
+  document.getElementById('hr').textContent       = fmt(r.hr_bpm, 0);
+  document.getElementById('spo2').textContent     = fmt(r.spo2_x10, 10);
+  document.getElementById('balance').textContent  = fmt(r.balance_x10, 10);
+  document.getElementById('grip').textContent     = fmt(r.grip_kg_x10, 10);
+  document.getElementById('reaction').textContent = fmt(r.reaction_ms, 0);
+  document.getElementById('score').textContent    = fmt(r.score, 0);
+  log("已更新记录 @t="+r.timestamp+"s, 评分="+r.score);
+}
+
+/* ---- 接收缓冲 + 帧同步（BLE 分包到达，需重组） ---- */
+let rxBuf = new Uint8Array(0);
+function onChunk(chunk){
+  const merged = new Uint8Array(rxBuf.length + chunk.length);
+  merged.set(rxBuf); merged.set(chunk, rxBuf.length);
+  rxBuf = merged;
+  tryParseFrames();
+}
+function tryParseFrames(){
+  let i = 0;
+  while (i + 5 <= rxBuf.length){
+    if (rxBuf[i] !== SOF0 || rxBuf[i+1] !== SOF1){ i++; continue; } // 重同步
+    const type = rxBuf[i+2];
+    const len  = rxBuf[i+3] | (rxBuf[i+4] << 8);
+    const total = 5 + len + 2;
+    if (i + total > rxBuf.length) break;             // 未收全，等下一包
+    const dv = new DataView(rxBuf.buffer, rxBuf.byteOffset + i, total);
+    const crcCalc = crc16_ccitt(rxBuf.subarray(i+2, i+5+len));
+    const crcRx = rxBuf[i+5+len] | (rxBuf[i+6+len] << 8);
+    if (crcCalc === crcRx && type === FRAME_TYPE_RECORD && len === RECORD_SIZE){
+      const r = parseRecord(dv, 5);
+      if (r) render(r);
+    } else {
+      log("帧 CRC/类型不符，丢弃");
+    }
+    i += total;
+  }
+  rxBuf = rxBuf.slice(i);   // 保留未处理尾部
+}
+
+/* ---- Web Bluetooth 连接 ---- */
+let device, characteristic;
+async function connect(){
+  if (!navigator.bluetooth){ alert("此浏览器不支持 Web Bluetooth，请用安卓 Chrome"); return; }
+  try{
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ services:[BLE_SERVICE] }],
+      optionalServices:[BLE_SERVICE]
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnect);
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(BLE_SERVICE);
+    characteristic = await service.getCharacteristic(BLE_CHAR);
+    await characteristic.startNotifications();
+    characteristic.addEventListener('characteristicvaluechanged', e => {
+      onChunk(new Uint8Array(e.target.value.buffer));
+    });
+    setConn(true);
+    log("已连接: " + (device.name || "(无名)"));
+  }catch(err){ log("连接失败: " + err); }
+}
+function onDisconnect(){ setConn(false); log("设备已断开"); }
+function disconnect(){ if (device && device.gatt.connected) device.gatt.disconnect(); }
+function setConn(on){
+  document.getElementById('conn').textContent = on ? "已连接" : "未连接";
+  document.getElementById('btnConnect').disabled = on;
+  document.getElementById('btnDisconnect').disabled = !on;
+}
+
+/* ---- 演示：本地构造一帧假数据，走与真实完全相同的解析路径 ---- */
+function buildFakeFrame(){
+  const rec = new Uint8Array(RECORD_SIZE);
+  const dv = new DataView(rec.buffer);
+  dv.setUint16(0, RECORD_VERSION, true);
+  dv.setUint32(4, 1234, true);
+  dv.setInt32(8, 1732, true);     // 身高 173.2cm
+  dv.setInt32(12, 65300, true);   // 体重 65.3kg
+  dv.setInt32(16, 2180, true);    // BMI 21.80
+  dv.setInt32(20, 185, true);     // 体脂 18.5%
+  dv.setInt32(24, 72, true);      // 心率 72
+  dv.setInt32(28, 985, true);     // 血氧 98.5%
+  dv.setInt32(32, 25, true);      // 平衡 2.5
+  dv.setInt32(36, 352, true);     // 握力 35.2kg
+  dv.setInt32(40, 240, true);     // 反应 240ms
+  dv.setInt32(44, 88, true);      // 评分 88
+  dv.setUint16(48, crc16_ccitt(rec.subarray(0,48)), true);
+  // 组帧
+  const frame = new Uint8Array(5 + RECORD_SIZE + 2);
+  frame[0]=SOF0; frame[1]=SOF1; frame[2]=FRAME_TYPE_RECORD;
+  frame[3]=RECORD_SIZE & 0xFF; frame[4]=(RECORD_SIZE>>8)&0xFF;
+  frame.set(rec, 5);
+  const c = crc16_ccitt(frame.subarray(2, 5+RECORD_SIZE));
+  frame[5+RECORD_SIZE]=c & 0xFF; frame[6+RECORD_SIZE]=(c>>8)&0xFF;
+  return frame;
+}
+
+document.getElementById('btnConnect').onclick = connect;
+document.getElementById('btnDisconnect').onclick = disconnect;
+document.getElementById('btnDemo').onclick = () => { log("注入假数据帧"); onChunk(buildFakeFrame()); };
+
+log("就绪。点『演示』看假数据，或『连接 BLE 设备』对接真机。");
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# 统一行尾：仓库内一律 LF，避免异地三人跨平台的 CRLF 冲突
+* text=auto eol=lf
+
+# 脚本强制 LF（否则 bash 会因 \r 报错）
+*.sh   text eol=lf
+*.ld   text eol=lf
+
+# Windows 脚本用 CRLF
+*.ps1  text eol=crlf
+
+# 二进制不做转换
+*.png binary
+*.jpg binary
+*.bin binary
+*.hex binary
+*.elf binary

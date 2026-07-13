@@ -1,0 +1,42 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "host",
+      "displayName": "Host（PC 编译 algorithms 并跑单元测试）",
+      "description": "在本机用系统编译器构建 algorithms/ 与 tests/，ctest 一键运行",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/host",
+      "cacheVariables": {
+        "HT_BUILD": "host",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "stm32",
+      "displayName": "STM32（交叉编译出 firmware.elf/.bin/.hex）",
+      "description": "arm-none-eabi 交叉编译，MODULE_SET 控制编译哪个人的模块子集",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/stm32",
+      "toolchainFile": "${sourceDir}/cmake/arm-none-eabi.cmake",
+      "cacheVariables": {
+        "HT_BUILD": "firmware",
+        "CMAKE_BUILD_TYPE": "MinSizeRel",
+        "MODULE_SET": "full"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "host",  "configurePreset": "host" },
+    { "name": "stm32", "configurePreset": "stm32" }
+  ],
+  "testPresets": [
+    {
+      "name": "host",
+      "configurePreset": "host",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error", "stopOnFailure": false }
+    }
+  ]
+}
