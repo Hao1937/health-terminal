@@ -45,10 +45,11 @@ jobs:
       matrix:
         module_set: [ yuhao, chafanting, liuyanming, full ]
     steps:
-      - name: 检出代码（含 STM32CubeF1 子模块）
+      - name: 检出代码
         uses: actions/checkout@v4
-        with:
-          submodules: recursive   # 拉 HAL，遵循 .gitmodules 的 shallow
+
+      - name: 获取 STM32CubeF1 HAL（sparse, 只拉 Drivers）
+        run: bash scripts/fetch_hal.sh
 
       - name: 安装 CMake / Ninja
         run: sudo apt-get update && sudo apt-get install -y cmake ninja-build

@@ -17,10 +17,10 @@
 
 ## 三步快速上手
 ```bash
-# 1) 克隆（含 STM32CubeF1 HAL 子模块）
-git clone --recurse-submodules <repo-url> health-terminal && cd health-terminal
+# 1) 克隆仓库
+git clone <repo-url> health-terminal && cd health-terminal
 
-# 2) 一键就绪：拉子模块 + 检查工具链 + 跑 host 单元测试
+# 2) 一键就绪：获取 HAL(只拉 Drivers) + 检查工具链 + 跑 host 单元测试
 ./scripts/bootstrap.sh        # Windows 用 PowerShell 跑 ./scripts/bootstrap.ps1
 
 # 3) 交叉编译并烧录首版固件（LED 闪烁 + 串口打印版本号）
@@ -38,7 +38,7 @@ cmake --preset host && cmake --build --preset host && ctest --preset host
 ```
 health-terminal/
 ├── include/        统一契约头：health_if.h（接口+状态码）、health_record.h（数据/帧格式）
-├── core/           芯片底层：STM32CubeF1(HAL submodule)、启动文件、时钟、链接脚本(隔离EEPROM区)
+├── core/           芯片底层：STM32CubeF1(HAL, scripts/fetch_hal.sh 按需获取)、启动文件、时钟、链接脚本(隔离EEPROM区)
 ├── bsp/            板级支持：i2c_bus / uart / gpio / delay / flash_eeprom
 ├── modules/        外设驱动：每个传感器一个子目录，统一 init/measure 接口
 ├── algorithms/     纯算法（PC 可编译测试）：filters / spo2_hr / balance / bodyfat_navy / health_score / crc16 / record_codec

@@ -27,15 +27,15 @@ else()
 endif()
 message(STATUS "MODULE_SET=${MODULE_SET} -> 真实现模块: ${ENABLED_MODULES}")
 
-# ---- 2. STM32CubeF1 HAL（submodule 引入，见 scripts/bootstrap） --------------
+# ---- 2. STM32CubeF1 HAL（scripts/fetch_hal.sh 按需 sparse-clone 到此路径） ------
 set(STM32CUBEF1_DIR "${CMAKE_SOURCE_DIR}/core/STM32CubeF1"
-    CACHE PATH "STM32CubeF1 HAL 根目录（git submodule）")
+    CACHE PATH "STM32CubeF1 HAL 根目录（由 scripts/fetch_hal.sh 获取）")
 if(NOT EXISTS "${STM32CUBEF1_DIR}/Drivers/STM32F1xx_HAL_Driver")
     message(FATAL_ERROR
         "未找到 STM32CubeF1 HAL：${STM32CUBEF1_DIR}\n"
-        "请先拉取 submodule：\n"
-        "    git submodule update --init --recursive\n"
-        "或运行 scripts/bootstrap.sh（Linux/macOS）/ scripts/bootstrap.ps1（Windows）。\n"
+        "请先获取 HAL（只拉 Drivers，约数十 MB）：\n"
+        "    bash scripts/fetch_hal.sh\n"
+        "或运行 scripts/bootstrap.sh（Linux/macOS）/ scripts/bootstrap.ps1（Windows），会自动获取。\n"
         "详见 docs/开发环境搭建.md。")
 endif()
 

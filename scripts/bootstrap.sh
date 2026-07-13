@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  bootstrap.sh —— Linux / macOS 一键就绪：拉 submodule + 检查工具链 + 编译自检
+#  bootstrap.sh —— Linux / macOS 一键就绪：获取 HAL + 检查工具链 + 编译自检
 # =============================================================================
 set -e
 cd "$(dirname "$0")/.."
 
-echo "==> 1/3 拉取 STM32CubeF1 submodule"
-git submodule update --init --recursive
+echo "==> 1/3 获取 STM32CubeF1 HAL（只拉 Drivers）"
+bash scripts/fetch_hal.sh
 
 echo "==> 2/3 检查工具链"
 need() { command -v "$1" >/dev/null 2>&1 && echo "  [OK] $1" || echo "  [缺失] $1 —— 见 docs/开发环境搭建.md"; }
