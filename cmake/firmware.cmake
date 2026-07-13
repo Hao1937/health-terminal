@@ -114,6 +114,7 @@ endforeach()
 target_link_options(firmware PRIVATE
     -T${LDSCRIPT}
     -Wl,-Map=${CMAKE_BINARY_DIR}/firmware.map
+    -Wl,--no-warn-rwx-segments   # 抑制新版 ld 对裸机单 LOAD 段的 RWX 提示（无害）
 )
 set_target_properties(firmware PROPERTIES
     OUTPUT_NAME "firmware"

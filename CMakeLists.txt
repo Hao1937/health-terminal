@@ -23,6 +23,11 @@ endif()
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+# 源码含 UTF-8 中文注释：MSVC 默认按系统代码页(GBK)解析会报 C4819，显式指定 UTF-8
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 # 公共头（契约）：include/ 下的 health_if.h / health_record.h
 set(HT_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
 set(HT_ALGO_DIR    "${CMAKE_SOURCE_DIR}/algorithms")
