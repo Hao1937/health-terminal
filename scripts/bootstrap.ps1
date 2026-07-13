@@ -1,8 +1,10 @@
-# =============================================================================
+﻿# =============================================================================
 #  bootstrap.ps1 —— Windows 一键就绪：获取 HAL + 检查工具链 + 编译自检
 #  用法（PowerShell）：  ./scripts/bootstrap.ps1
 # =============================================================================
 $ErrorActionPreference = "Stop"
+# 让控制台按 UTF-8 显示，避免中文乱码（本文件已存为 UTF-8 with BOM）
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 Set-Location (Join-Path $PSScriptRoot "..")
 
 Write-Host "==> 1/3 获取 STM32CubeF1 的 HAL 与 CMSIS（约 27MB）"
