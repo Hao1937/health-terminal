@@ -1,0 +1,76 @@
+# =============================================================================
+#  GitHub Actions CI —— 每次 push / PR 自动跑 host 单元测试 + 交叉编译固件
+#  绿勾 = 可安全合并；红叉 = 谁推的谁修。对齐 docs/协作流程.md「合并前 host 全绿」。
+# =============================================================================
+name: CI
+
+# 触发时机：推到主线/开发线/个人分支，或向 main/dev 发 PR 时
+on:
+  push:
+    branches: [ main, dev, "feature/**" ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 作业 1：在 PC 上编译 algorithms/ 并跑单元测试（人人相关，不需要开发板）
+  # ---------------------------------------------------------------------------
+  host-tests:
+    name: Host 单元测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 CMake / Ninja / 编译器
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build build-essential
+
+      - name: 配置 (host preset)
+        run: cmake --preset host
+
+      - name: 编译
+        run: cmake --build --preset host
+
+      - name: 运行 ctest
+        run: ctest --preset host --output-on-failure
+
+  # ---------------------------------------------------------------------------
+  # 作业 2：arm 交叉编译固件；用矩阵验证 4 种 MODULE_SET 子集都能编过
+  # ---------------------------------------------------------------------------
+  firmware-build:
+    name: 固件交叉编译 (${{ matrix.module_set }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false      # 一个子集挂了，其余继续编，方便一次看全
+      matrix:
+        module_set: [ yuhao, chafanting, liuyanming, full ]
+    steps:
+      - name: 检出代码（含 STM32CubeF1 子模块）
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive   # 拉 HAL，遵循 .gitmodules 的 shallow
+
+      - name: 安装 CMake / Ninja
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build
+
+      - name: 安装 arm-none-eabi-gcc 工具链
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: '13.2.Rel1'
+
+      - name: 配置 (stm32 preset, MODULE_SET=${{ matrix.module_set }})
+        run: cmake --preset stm32 -DMODULE_SET=${{ matrix.module_set }}
+
+      - name: 编译固件
+        run: cmake --build --preset stm32
+
+      - name: 上传固件产物（仅 full 集成版）
+        if: matrix.module_set == 'full'
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-full
+          path: |
+            build/stm32/firmware.elf
+            build/stm32/firmware.bin
+            build/stm32/firmware.hex
+          if-no-files-found: error

@@ -58,6 +58,11 @@ health-terminal/
 | 查樊听 | 体重(HX711#1)与标定、身高(HC-SR04)+温度补偿(DS18B20) |
 | 刘晏铭 | OLED 菜单与趋势、矩阵键盘、反应时间、片内 Flash 历史、BLE+Web 看板、MPU6050 平衡 |
 
+## 持续集成（CI）
+仓库配了 GitHub Actions（`.github/workflows/ci.yml`）：每次 `push` 或 PR 会自动
+**跑 host 单元测试 + 用 4 种 `MODULE_SET` 交叉编译固件**，绿勾才建议合并（对齐
+[协作流程](docs/协作流程.md)「合并前 host 全绿」）。`full` 集成版固件会作为构建产物上传。
+
 ## 文档索引
 - [接口文档](docs/接口文档.md) · [引脚分配表](docs/引脚分配表.md) · [开发环境搭建](docs/开发环境搭建.md) · [协作流程](docs/协作流程.md)
 - 第一周分头开工清单见下方 [docs/第一周行动清单.md](docs/第一周行动清单.md)
