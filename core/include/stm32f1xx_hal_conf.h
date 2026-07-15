@@ -24,57 +24,58 @@ extern "C" {
 #define HAL_TIM_MODULE_ENABLED
 
 /* ---- 振荡器 / 电压 ---- */
-#if !defined  (HSE_VALUE)
-  #define HSE_VALUE               8000000U  /* 最小系统板 8MHz 外部晶振 */
+#if !defined(HSE_VALUE)
+#define HSE_VALUE 8000000U /* 最小系统板 8MHz 外部晶振 */
 #endif
-#define HSE_STARTUP_TIMEOUT       100U
-#define HSI_VALUE                 8000000U
-#define LSI_VALUE                 40000U
-#define LSE_VALUE                 32768U
-#define LSE_STARTUP_TIMEOUT       5000U
-#define VDD_VALUE                 3300U
-#define TICK_INT_PRIORITY         15U
-#define USE_RTOS                  0U
-#define PREFETCH_ENABLE           1U
+#define HSE_STARTUP_TIMEOUT 100U
+#define HSI_VALUE 8000000U
+#define LSI_VALUE 40000U
+#define LSE_VALUE 32768U
+#define LSE_STARTUP_TIMEOUT 5000U
+#define VDD_VALUE 3300U
+#define TICK_INT_PRIORITY 15U
+#define USE_RTOS 0U
+#define PREFETCH_ENABLE 1U
 
-#define USE_HAL_I2C_REGISTER_CALLBACKS  0U
+#define USE_HAL_I2C_REGISTER_CALLBACKS 0U
 #define USE_HAL_UART_REGISTER_CALLBACKS 0U
-#define USE_HAL_TIM_REGISTER_CALLBACKS  0U
+#define USE_HAL_TIM_REGISTER_CALLBACKS 0U
 
 /* ---- 断言（发布版关闭以省体积）---- */
 /* #define USE_FULL_ASSERT   1U */
 
 /* ---- 包含启用模块的头 ---- */
 #ifdef HAL_RCC_MODULE_ENABLED
-  #include "stm32f1xx_hal_rcc.h"
+#include "stm32f1xx_hal_rcc.h"
 #endif
 #ifdef HAL_GPIO_MODULE_ENABLED
-  #include "stm32f1xx_hal_gpio.h"
+#include "stm32f1xx_hal_gpio.h"
 #endif
 #ifdef HAL_DMA_MODULE_ENABLED
-  #include "stm32f1xx_hal_dma.h"
+#include "stm32f1xx_hal_dma.h"
 #endif
 #ifdef HAL_CORTEX_MODULE_ENABLED
-  #include "stm32f1xx_hal_cortex.h"
+#include "stm32f1xx_hal_cortex.h"
 #endif
 #ifdef HAL_FLASH_MODULE_ENABLED
-  #include "stm32f1xx_hal_flash.h"
+#include "stm32f1xx_hal_flash.h"
 #endif
 #ifdef HAL_I2C_MODULE_ENABLED
-  #include "stm32f1xx_hal_i2c.h"
+#include "stm32f1xx_hal_i2c.h"
 #endif
 #ifdef HAL_UART_MODULE_ENABLED
-  #include "stm32f1xx_hal_uart.h"
+#include "stm32f1xx_hal_uart.h"
 #endif
 #ifdef HAL_TIM_MODULE_ENABLED
-  #include "stm32f1xx_hal_tim.h"
+#include "stm32f1xx_hal_tim.h"
 #endif
 
 #ifdef USE_FULL_ASSERT
-  #define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
-  void assert_failed(uint8_t *file, uint32_t line);
+#define assert_param(expr) \
+  ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
+void assert_failed(uint8_t *file, uint32_t line);
 #else
-  #define assert_param(expr) ((void)0U)
+#define assert_param(expr) ((void)0U)
 #endif
 
 #ifdef __cplusplus

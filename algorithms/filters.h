@@ -10,8 +10,8 @@
 #ifndef FILTERS_H
 #define FILTERS_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,10 +23,10 @@ extern "C" {
 #define MEDIAN_MAX_WINDOW 15
 
 typedef struct {
-    int32_t buf[MEDIAN_MAX_WINDOW]; /* 环形缓冲，存最近 window 个样本 */
-    uint8_t window;                 /* 实际窗口大小，奇数为宜 */
-    uint8_t count;                  /* 已填入样本数（预热用） */
-    uint8_t head;                   /* 下一个写入位置 */
+  int32_t buf[MEDIAN_MAX_WINDOW]; /* 环形缓冲，存最近 window 个样本 */
+  uint8_t window;                 /* 实际窗口大小，奇数为宜 */
+  uint8_t count;                  /* 已填入样本数（预热用） */
+  uint8_t head;                   /* 下一个写入位置 */
 } median_filter_t;
 
 /** @brief 初始化中值滤波器，window 会被夹到 [1, MEDIAN_MAX_WINDOW]。 */
@@ -40,11 +40,11 @@ int32_t median_push(median_filter_t *f, int32_t sample);
 #define MOVAVG_MAX_WINDOW 32
 
 typedef struct {
-    int32_t buf[MOVAVG_MAX_WINDOW];
-    int64_t sum;      /* 窗口内样本和，避免每次重算 */
-    uint8_t window;
-    uint8_t count;
-    uint8_t head;
+  int32_t buf[MOVAVG_MAX_WINDOW];
+  int64_t sum; /* 窗口内样本和，避免每次重算 */
+  uint8_t window;
+  uint8_t count;
+  uint8_t head;
 } movavg_filter_t;
 
 /** @brief 初始化滑动平均，window 会被夹到 [1, MOVAVG_MAX_WINDOW]。 */
@@ -57,9 +57,9 @@ int32_t movavg_push(movavg_filter_t *f, int32_t sample);
 /*  angle = alpha*(angle + gyro*dt) + (1-alpha)*acc_angle              */
 /* ------------------------------------------------------------------ */
 typedef struct {
-    float angle;   /* 当前融合角，单位度 */
-    float alpha;   /* 陀螺权重，典型 0.95~0.98 */
-    uint8_t inited;
+  float angle; /* 当前融合角，单位度 */
+  float alpha; /* 陀螺权重，典型 0.95~0.98 */
+  uint8_t inited;
 } comp_filter_t;
 
 /** @brief 初始化互补滤波器，alpha 会被夹到 [0,1]。 */

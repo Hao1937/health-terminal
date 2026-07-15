@@ -6,9 +6,10 @@
 #ifndef BSP_UART_H
 #define BSP_UART_H
 
-#include "stm32f1xx_hal.h"
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+
+#include "stm32f1xx_hal.h"
 
 extern UART_HandleTypeDef g_debug_uart; /* USART1，printf 目标 */
 extern UART_HandleTypeDef g_ble_uart;   /* USART2，BLE 模块 */

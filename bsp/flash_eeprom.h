@@ -4,15 +4,16 @@
  * @owner   王宇浩（组长）；主要使用者：刘晏铭（storage 历史记录模块）
  *
  * EEPROM 区由 STM32F103C8Tx_FLASH.ld 隔离出（0x0800F000，4KB=4 页，页 1KB）。
- * 提供「按字节偏移读」「按页擦写」的裸接口，storage 模块在其上实现记录环形存储。
+ * 提供「按字节偏移读」「按页擦写」的裸接口，storage
+ * 模块在其上实现记录环形存储。
  */
 #ifndef BSP_FLASH_EEPROM_H
 #define BSP_FLASH_EEPROM_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
-#define EEPROM_PAGE_SIZE  1024u
+#define EEPROM_PAGE_SIZE 1024u
 #define EEPROM_PAGE_COUNT 4u
 #define EEPROM_TOTAL_SIZE (EEPROM_PAGE_SIZE * EEPROM_PAGE_COUNT)
 
@@ -32,7 +33,8 @@ int eeprom_read(uint32_t offset, void *buf, size_t len);
 int eeprom_erase_page(uint32_t page);
 
 /**
- * @brief 向 EEPROM 区偏移 offset 写 len 字节（须半字对齐，调用方保证目标已擦除）。
+ * @brief 向 EEPROM 区偏移 offset 写 len
+ * 字节（须半字对齐，调用方保证目标已擦除）。
  * @return 0 成功；-1 越界/未对齐；-2 HAL 失败。
  */
 int eeprom_write(uint32_t offset, const void *buf, size_t len);

@@ -12,8 +12,9 @@
 #ifndef SPO2_HR_H
 #define SPO2_HR_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+
 #include "health_if.h"
 
 #ifdef __cplusplus
@@ -21,9 +22,9 @@ extern "C" {
 #endif
 
 typedef struct {
-    int32_t heart_rate_bpm; /* 估计心率 */
-    int32_t spo2_x10;       /* 估计血氧 ×10，例 985 = 98.5% */
-    uint8_t valid;          /* 1=结果可信，0=信号太弱/峰值不足 */
+  int32_t heart_rate_bpm; /* 估计心率 */
+  int32_t spo2_x10;       /* 估计血氧 ×10，例 985 = 98.5% */
+  uint8_t valid;          /* 1=结果可信，0=信号太弱/峰值不足 */
 } spo2_hr_result_t;
 
 /**

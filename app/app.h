@@ -10,11 +10,11 @@
 
 /* 主状态机状态 */
 typedef enum {
-    ST_BOOT = 0,   /* 上电自检：探测 I2C 从机、打印版本 */
-    ST_MENU,       /* 主菜单：键盘选择测量项 */
-    ST_MEASURE,    /* 正在测量选中项 */
-    ST_RESULT,     /* 展示单项/整机结果与综合评分 */
-    ST_HISTORY,    /* 浏览历史记录 */
+  ST_BOOT = 0, /* 上电自检：探测 I2C 从机、打印版本 */
+  ST_MENU,     /* 主菜单：键盘选择测量项 */
+  ST_MEASURE,  /* 正在测量选中项 */
+  ST_RESULT,   /* 展示单项/整机结果与综合评分 */
+  ST_HISTORY,  /* 浏览历史记录 */
 } app_state_t;
 
 /** @brief 初始化时钟/外设/模块，进入 BOOT。 */

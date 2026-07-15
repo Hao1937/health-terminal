@@ -11,6 +11,7 @@
 #define BODYFAT_NAVY_H
 
 #include <stdint.h>
+
 #include "health_if.h"
 
 #ifdef __cplusplus
@@ -39,7 +40,8 @@ hs_status_t bmi_compute(int32_t height_mm, int32_t weight_g, int32_t *bmi_x100);
  * @return HS_OK / HS_NOT_READY（围度非法导致对数域错误）
  */
 hs_status_t bodyfat_navy(sex_t sex, int32_t height_mm, int32_t neck_mm,
-                         int32_t waist_mm, int32_t hip_mm, int32_t *bodyfat_x10);
+                         int32_t waist_mm, int32_t hip_mm,
+                         int32_t *bodyfat_x10);
 
 #ifdef __cplusplus
 }

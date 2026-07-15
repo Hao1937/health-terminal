@@ -1,7 +1,8 @@
 /**
  * @file    hx711.h
  * @brief   HX711 24 位称重 ADC 的可复用底层驱动（软件时序，与具体秤体无关）。
- * @owner   王宇浩（组长）；使用者：握力(hx711_grip) 与 体重(hx711_weight, 查樊听)
+ * @owner   王宇浩（组长）；使用者：握力(hx711_grip) 与 体重(hx711_weight,
+ * 查樊听)
  *
  * HX711 是两线接口（SCK 输出 + DOUT 输入），无标准总线，靠 MCU 打拍读 24bit。
  * 本驱动做成「实例化」的：调用方填好引脚与增益，两路 HX711（握力#2、体重#1）
@@ -16,23 +17,24 @@
 #ifndef BSP_HX711_H
 #define BSP_HX711_H
 
-#include "stm32f1xx_hal.h"
 #include <stdint.h>
+
+#include "stm32f1xx_hal.h"
 
 /** @brief 增益/通道：数值即读完 24bit 后要补足的 SCK 总脉冲数。 */
 typedef enum {
-    HX711_GAIN_A128 = 25,  /* 通道 A，增益 128（最灵敏，称重常用） */
-    HX711_GAIN_B32  = 26,  /* 通道 B，增益 32 */
-    HX711_GAIN_A64  = 27,  /* 通道 A，增益 64 */
+  HX711_GAIN_A128 = 25, /* 通道 A，增益 128（最灵敏，称重常用） */
+  HX711_GAIN_B32 = 26,  /* 通道 B，增益 32 */
+  HX711_GAIN_A64 = 27,  /* 通道 A，增益 64 */
 } hx711_gain_t;
 
 typedef struct {
-    GPIO_TypeDef *sck_port;
-    uint16_t      sck_pin;
-    GPIO_TypeDef *dout_port;
-    uint16_t      dout_pin;
-    hx711_gain_t  gain;
-    int32_t       offset;   /* 皮重（tare），净读数 = raw - offset */
+  GPIO_TypeDef *sck_port;
+  uint16_t sck_pin;
+  GPIO_TypeDef *dout_port;
+  uint16_t dout_pin;
+  hx711_gain_t gain;
+  int32_t offset; /* 皮重（tare），净读数 = raw - offset */
 } hx711_t;
 
 /** @brief 配置 SCK 推挽输出、DOUT 上拉输入并上电。须在 delay_init 之后调用。 */
@@ -53,7 +55,8 @@ int hx711_read_raw(hx711_t *h, int32_t *out, uint32_t timeout_ms);
  * @brief 连读 times 次取平均，抑制随机噪声。
  * @return 0 成功；-1 任一次读超时
  */
-int hx711_read_average(hx711_t *h, uint8_t times, int32_t *out, uint32_t timeout_ms);
+int hx711_read_average(hx711_t *h, uint8_t times, int32_t *out,
+                       uint32_t timeout_ms);
 
 /**
  * @brief 去皮：多次平均当前读数并存为 offset（调用时秤上应空载）。

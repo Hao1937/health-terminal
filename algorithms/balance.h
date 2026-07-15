@@ -10,8 +10,9 @@
 #ifndef BALANCE_H
 #define BALANCE_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+
 #include "health_if.h"
 
 #ifdef __cplusplus

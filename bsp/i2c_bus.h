@@ -9,15 +9,17 @@
 #ifndef BSP_I2C_BUS_H
 #define BSP_I2C_BUS_H
 
-#include "stm32f1xx_hal.h"
 #include <stdint.h>
+
+#include "stm32f1xx_hal.h"
 
 extern I2C_HandleTypeDef g_sensor_i2c;
 
 /** @brief 初始化 I2C1（100kHz 标准模式，PB6/PB7）。 */
 void i2c_bus_init(void);
 /** @brief 向 dev_addr(已左移) 的 reg 写 len 字节。返回 HAL_StatusTypeDef。 */
-int i2c_mem_write(uint16_t dev_addr, uint16_t reg, const uint8_t *buf, uint16_t len);
+int i2c_mem_write(uint16_t dev_addr, uint16_t reg, const uint8_t *buf,
+                  uint16_t len);
 /** @brief 从 dev_addr(已左移) 的 reg 读 len 字节。返回 HAL_StatusTypeDef。 */
 int i2c_mem_read(uint16_t dev_addr, uint16_t reg, uint8_t *buf, uint16_t len);
 /** @brief 探测某地址从机是否在线（ACK）。返回 1 在线、0 不在线。 */
