@@ -1,0 +1,57 @@
+:project:
+  :which_ceedling: gem
+  :ceedling_version: '?'
+  :use_mocks: TRUE
+  :use_test_preprocessor: :none
+  :build_root: build
+  :test_file_prefix: test_
+  :default_tasks:
+    - test:all
+
+# 打开 max30102.c 里 #if defined(MODULE_ENABLED_MAX30102) 的真实实现分支
+:defines:
+  :test:
+    '*':
+      - MODULE_ENABLED_MAX30102
+
+:paths:
+  :source:
+    - ../../../algorithms
+    - ..
+  :include:
+    - ../../../include
+    - ../../../algorithms
+    - ..
+    - ../../../bsp
+    - ../../../core/include
+    - support
+  :test:
+    - test/**
+
+:cmock:
+  :mock_prefix: mock_
+  :when_no_prototypes: :warn
+  :enforce_strict_ordering: FALSE
+  :plugins:
+    - :ignore
+    - :ignore_arg
+    - :return_thru_ptr
+    - :callback
+
+:plugins:
+  :load_paths: []
+  :enabled:
+    - compile_commands_json_db
+
+:environment:
+  - :path:
+    - C:/Program Files/LLVM/bin
+    - '#{ENV[''PATH'']}'
+
+:tools:
+  :test_compiler:
+    :executable: clang.exe
+    :name: 'clang_test_compiler'
+  :test_linker:
+    :executable: clang.exe
+    :name: 'clang_test_linker'

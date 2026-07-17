@@ -1,0 +1,35 @@
+:project:
+  :which_ceedling: gem
+  :ceedling_version: '?'
+  :use_mocks: FALSE
+  :use_test_preprocessor: :none
+  :build_root: build
+  :test_file_prefix: test_
+  :default_tasks:
+    - test:all
+
+:paths:
+  :source:
+    - ..
+  :include:
+    - ..
+    - ../../include
+  :test:
+    - test/**
+
+:environment:
+  - :path:
+    - C:/Program Files/LLVM/bin
+    - '#{ENV[''PATH'']}'
+
+:tools:
+  :test_compiler:
+    :executable: clang.exe
+    :name: 'clang_test_compiler'
+  :test_linker:
+    :executable: clang.exe
+    :name: 'clang_test_linker'  
+:plugins:
+  :load_paths: []
+  :enabled:
+    - compile_commands_json_db
