@@ -1,6 +1,10 @@
 {
   "version": 3,
-  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
   "configurePresets": [
     {
       "name": "host",
@@ -10,7 +14,8 @@
       "binaryDir": "${sourceDir}/build/host",
       "cacheVariables": {
         "HT_BUILD": "host",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
@@ -28,15 +33,26 @@
     }
   ],
   "buildPresets": [
-    { "name": "host",  "configurePreset": "host" },
-    { "name": "stm32", "configurePreset": "stm32" }
+    {
+      "name": "host",
+      "configurePreset": "host"
+    },
+    {
+      "name": "stm32",
+      "configurePreset": "stm32"
+    }
   ],
   "testPresets": [
     {
       "name": "host",
       "configurePreset": "host",
-      "output": { "outputOnFailure": true },
-      "execution": { "noTestsAction": "error", "stopOnFailure": false }
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
     }
   ]
 }

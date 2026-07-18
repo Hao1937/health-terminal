@@ -15,9 +15,10 @@
 #if defined(MODULE_ENABLED_MAX30102)
 
 #include "board.h"
+#include "delay.h"
 #include "i2c_bus.h"
 #include "spo2_hr.h"
-#include "stm32f1xx_hal.h"
+#include "tick.h"
 
 /* ---- 寄存器地址（数据手册 Table） ---- */
 #define REG_INTR_STATUS_1 0x00
@@ -68,10 +69,10 @@ hs_status_t max30102_init(void) {
 
   /* 软复位并等待复位位自清 */
   if (wr_reg(REG_MODE_CONFIG, MODE_RESET) != 0) return HS_TIMEOUT;
-  uint32_t t0 = HAL_GetTick();
+  uint32_t t0 = tick_now_ms();
   do {
     if (rd_reg(REG_MODE_CONFIG, &id) != 0) return HS_TIMEOUT;
-    if (HAL_GetTick() - t0 > 100u) return HS_TIMEOUT;
+    if (tick_now_ms() - t0 > 100u) return HS_TIMEOUT;
   } while (id & MODE_RESET);
 
   int rc = 0;
@@ -104,16 +105,16 @@ hs_status_t max30102_measure(hs_sample_t *out) {
   if (fifo_reset() != 0) return HS_TIMEOUT;
 
   size_t count = 0;
-  uint32_t t0 = HAL_GetTick();
+  uint32_t t0 = tick_now_ms();
   while (count < TARGET_SAMPLES) {
-    if (HAL_GetTick() - t0 > MEASURE_TIMEOUT_MS) break;
+    if (tick_now_ms() - t0 > MEASURE_TIMEOUT_MS) break;
 
     uint8_t wr = 0, rd = 0;
     if (rd_reg(REG_FIFO_WR_PTR, &wr) != 0) return HS_TIMEOUT;
     if (rd_reg(REG_FIFO_RD_PTR, &rd) != 0) return HS_TIMEOUT;
     int avail = ((int)wr - (int)rd) & (int)(FIFO_DEPTH - 1); /* 环形，取模 32 */
     if (avail == 0) {
-      HAL_Delay(5);
+      delay_ms(5);
       continue;
     }
 
