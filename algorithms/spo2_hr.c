@@ -6,7 +6,7 @@
 
 /* 计算缓冲均值（直流分量） */
 static int64_t mean_i32(const int32_t *b, size_t n) {
-  int64_t s = 0;
+  int64_t s=0;
   for (size_t i = 0; i < n; ++i) s += b[i];
   return (n > 0) ? s / (int64_t)n : 0;
 }
