@@ -13,6 +13,30 @@ on:
 
 jobs:
   # ---------------------------------------------------------------------------
+  # 作业 0：格式化 + 静态检查（不需要跑测试就能拦掉的问题，最快反馈）
+  # ---------------------------------------------------------------------------
+  lint:
+    name: 格式化 + Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 clang-format / clang-tidy / CMake / Ninja
+        run: sudo apt-get update && sudo apt-get install -y clang-format clang-tidy cmake ninja-build build-essential
+
+      - name: 格式检查（clang-format）
+        run: |
+          git ls-files -- '*.c' '*.h' | xargs clang-format --dry-run --Werror
+
+      - name: 配置（生成 compile_commands.json）
+        run: cmake --preset host
+
+      - name: 静态检查（clang-tidy，仅 algorithms/，排除 Ceedling 独立测试框架）
+        run: |
+          git ls-files -- 'algorithms/*.c' ':!:algorithms/Ceedling/*' | xargs -I{} clang-tidy {} -p build/host
+
+  # ---------------------------------------------------------------------------
   # 作业 1：在 PC 上编译 algorithms/ 并跑单元测试（人人相关，不需要开发板）
   # ---------------------------------------------------------------------------
   host-tests:

@@ -22,14 +22,61 @@
     - C:/Program Files/LLVM/bin
     - '#{ENV[''PATH'']}'
 
+:plugins:
+  :enabled:
+    - compile_commands_json_db
+    - gcov
+
 :tools:
   :test_compiler:
     :executable: clang.exe
     :name: 'clang_test_compiler'
   :test_linker:
     :executable: clang.exe
-    :name: 'clang_test_linker'  
-:plugins:
-  :load_paths: []
-  :enabled:
-    - compile_commands_json_db
+    :name: 'clang_test_linker'
+  :gcov_compiler:
+    :executable: clang.exe
+    :name: 'gcov_compiler'
+    :arguments:
+      - "-g"
+      - "-fprofile-arcs"
+      - "-ftest-coverage"
+      - '-I"${5}"'
+      - '-D"${6}"'
+      - "-DGCOV_COMPILER"
+      - "-DCODE_COVERAGE"
+      - '-c "${1}"'
+      - '-o "${2}"'
+      - "-MMD"
+      - '-MF "${4}"'
+  :gcov_linker:
+    :executable: clang.exe
+    :name: 'gcov_linker'
+    :arguments:
+      - "-g"
+      - "-fprofile-arcs"
+      - "-ftest-coverage"
+      - "${1}"
+      - "${5}"
+      - '-o "${2}"'
+      - "${4}"
+  :gcov_summary:
+    :executable: llvm-cov.exe
+    :name: 'gcov_summary'
+    :arguments:
+      - "gcov"
+      - "-n"
+      - "-p"
+      - "-b"
+      - '-o "${2}"'
+      - '"${1}"'
+  :gcov_report:
+    :executable: llvm-cov.exe
+    :name: 'gcov_report'
+    :arguments:
+      - "gcov"
+      - "-b"
+      - "-c"
+      - "-r"
+      - "-x"
+      - "${1}"
