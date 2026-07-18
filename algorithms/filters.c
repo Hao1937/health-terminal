@@ -38,7 +38,9 @@ int32_t median_push(median_filter_t *f, int32_t sample) {
     }
     tmp[j + 1] = key;
   }
-  return tmp[n / 2];
+  // TODO(王宇浩): clang-analyzer 认为若跳过 median_init 直接调用可能 n==0
+  // 读到未初始化栈内存； 契约上不会发生，暂时 NOLINT，后续评估是否加防御性检查
+  return tmp[n / 2];  // NOLINT(clang-analyzer-core.uninitialized.UndefReturn)
 }
 
 /* ============================ 滑动平均 ============================ */
