@@ -10,6 +10,9 @@
 set(MODULE_SET "full" CACHE STRING "模块子集：yuhao|chafanting|liuyanming|full")
 set_property(CACHE MODULE_SET PROPERTY STRINGS yuhao chafanting liuyanming full)
 
+# HC-SR04 发射面到地面的实际垂直高度；安装后用卷尺标定并覆盖此值。
+set(HCSR04_INSTALL_HEIGHT_MM "2000" CACHE STRING "HC-SR04 安装面离地高度(mm)")
+
 set(ALL_MODULES
     max30102 hx711_weight hx711_grip hcsr04 ds18b20 mpu6050
     oled keypad reaction ble storage)
@@ -104,6 +107,7 @@ target_compile_definitions(firmware PRIVATE
     STM32F103xB
     USE_HAL_DRIVER
     HSE_VALUE=8000000        # 最小系统板 8MHz 晶振
+    HCSR04_INSTALL_HEIGHT_MM=${HCSR04_INSTALL_HEIGHT_MM}
 )
 # 逐模块打开「真实现」分支
 foreach(m ${ENABLED_MODULES})

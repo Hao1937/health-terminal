@@ -74,8 +74,12 @@ static void measure_all(void) {
     if (s->init) (void)s->init();
     hs_sample_t sample = {HS_VALUE_INVALID, HS_VALUE_INVALID};
     hs_status_t st = s->measure(&sample);
-    printf("[measure] %-9s (%s) -> %s\r\n", s->name, s->owner,
-           hs_status_str(st));
+    printf("[measure] %-9s (%s) -> %s", s->name, s->owner, hs_status_str(st));
+    if (st == HS_OK) {
+      printf(" primary=%ld secondary=%ld", (long)sample.primary,
+             (long)sample.secondary);
+    }
+    printf("\r\n");
     if (st == HS_OK) store_sample(s->item, &sample);
   }
 

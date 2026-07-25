@@ -5,6 +5,7 @@ set(HT_TESTS
     test_filters
     test_codec
     test_algorithms
+    test_height
 )
 
 foreach(t ${HT_TESTS})
