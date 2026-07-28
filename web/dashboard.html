@@ -32,7 +32,7 @@
 </head>
 <body>
   <h1>多维度智能健康体测终端 <span class="pill" id="conn">未连接</span></h1>
-  <div class="sub">Web Bluetooth 单页看板 · 数据帧格式与 include/health_record.h 严格一致 · 安卓 Chrome 可用</div>
+  <div class="sub">Web Bluetooth 单页看板 · 数据帧格式与 include/health_record.h 严格一致 · 安卓 Chrome（HTTPS/localhost）可用</div>
 
   <div class="bar">
     <button id="btnConnect">连接 BLE 设备</button>
@@ -142,6 +142,14 @@ function tryParseFrames(){
     if (rxBuf[i] !== SOF0 || rxBuf[i+1] !== SOF1){ i++; continue; } // 重同步
     const type = rxBuf[i+2];
     const len  = rxBuf[i+3] | (rxBuf[i+4] << 8);
+    if (type === FRAME_TYPE_RECORD && len !== RECORD_SIZE){
+      log("RECORD LEN 不符，重新寻找帧头: " + len);
+      i++; continue;
+    }
+    if (len > 256){
+      log("帧 LEN 超出上限，重新寻找帧头: " + len);
+      i++; continue;
+    }
     const total = 5 + len + 2;
     if (i + total > rxBuf.length) break;             // 未收全，等下一包
     const dv = new DataView(rxBuf.buffer, rxBuf.byteOffset + i, total);
@@ -162,9 +170,10 @@ function tryParseFrames(){
 let device, characteristic;
 async function connect(){
   if (!navigator.bluetooth){ alert("此浏览器不支持 Web Bluetooth，请用安卓 Chrome"); return; }
+  rxBuf = new Uint8Array(0);
   try{
     device = await navigator.bluetooth.requestDevice({
-      filters: [{ services:[BLE_SERVICE] }],
+      acceptAllDevices: true,
       optionalServices:[BLE_SERVICE]
     });
     device.addEventListener('gattserverdisconnected', onDisconnect);
@@ -173,13 +182,19 @@ async function connect(){
     characteristic = await service.getCharacteristic(BLE_CHAR);
     await characteristic.startNotifications();
     characteristic.addEventListener('characteristicvaluechanged', e => {
-      onChunk(new Uint8Array(e.target.value.buffer));
+      const value = e.target.value;
+      onChunk(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
     });
     setConn(true);
     log("已连接: " + (device.name || "(无名)"));
   }catch(err){ log("连接失败: " + err); }
 }
-function onDisconnect(){ setConn(false); log("设备已断开"); }
+function onDisconnect(){
+  characteristic = undefined;
+  rxBuf = new Uint8Array(0);
+  setConn(false);
+  log("设备已断开");
+}
 function disconnect(){ if (device && device.gatt.connected) device.gatt.disconnect(); }
 function setConn(on){
   document.getElementById('conn').textContent = on ? "已连接" : "未连接";
