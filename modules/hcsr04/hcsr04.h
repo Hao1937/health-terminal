@@ -3,8 +3,8 @@
  * @brief   HC-SR04 身高（Trig/Echo，TIM4 输入捕获），配合 DS18B20 温度补偿声速
  * @owner   查樊听
  *
- * 统一测量接口：hcsr04\_init() 初始化，hcsr04\_measure() 采一次写入
- * hs_sample_t。 未实现前一律返回 HS_NOT_IMPLEMENTED。
+ * hcsr04_measure() 输出 primary=身高(mm)，secondary=同次测量温度(0.01°C)。
+ * 安装高度由 CMake 参数 HCSR04_INSTALL_HEIGHT_MM 配置。
  */
 #ifndef MODULE_HCSR04_H
 #define MODULE_HCSR04_H
