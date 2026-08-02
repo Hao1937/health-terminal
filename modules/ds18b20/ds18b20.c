@@ -1,7 +1,7 @@
 /**
  * @file    ds18b20.c
  * @brief   DS18B20 三线供电模式驱动，DQ=PB5，外接 4.7k 上拉到 3.3V。
- * @owner   查樊听
+ * @owner   查梵听
  */
 #include "ds18b20.h"
 

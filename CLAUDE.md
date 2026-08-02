@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 基于 STM32F103C8T6 的健康体测终端：一次完成 8 项测量（身高/体重/BMI·体脂/心率/血氧/平衡/握力/反应时间）
 并给出综合评分。裸机主循环状态机（无 RTOS），OLED + 矩阵键盘操作，片内 Flash 存历史，BLE 透传到
-Web Bluetooth 网页看板。3 人异地并行开发（王宇浩[组长] / 查樊听 / 刘晏铭）。
+Web Bluetooth 网页看板。3 人异地并行开发（王宇浩[组长] / 查梵听 / 刘晏铭）。
 
 ## 常用命令
 

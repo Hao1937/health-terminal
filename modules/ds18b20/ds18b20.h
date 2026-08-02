@@ -1,7 +1,7 @@
 /**
  * @file    ds18b20.h
  * @brief   DS18B20 温度（单总线 PB5），为身高声速与体测环境提供温度
- * @owner   查樊听
+ * @owner   查梵听
  *
  * ds18b20_measure() 输出 primary=温度(0.01°C)，带 Scratchpad CRC8 校验。
  * 本驱动要求三线供电，不支持寄生供电模式。

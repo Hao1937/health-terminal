@@ -1,7 +1,7 @@
 /**
  * @file    hcsr04.c
  * @brief   HC-SR04 身高测量：PB9 Trig，PB8/TIM4_CH3 Echo。
- * @owner   查樊听
+ * @owner   查梵听
  */
 #include "hcsr04.h"
 

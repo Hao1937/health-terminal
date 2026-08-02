@@ -39,7 +39,7 @@
 #define I2C_ADDR_MPU6050 (0x68 << 1)
 #define I2C_ADDR_MAX30102 (0x57 << 1)
 
-/* ---- HX711#1 体重（查樊听）：SCK=PA1, DOUT=PB11 ---- */
+/* ---- HX711#1 体重（查梵听）：SCK=PA1, DOUT=PB11 ---- */
 #define HX711_W_SCK_PORT GPIOA
 #define HX711_W_SCK_PIN GPIO_PIN_1
 #define HX711_W_DOUT_PORT GPIOB
@@ -51,14 +51,14 @@
 #define HX711_G_DOUT_PORT GPIOB
 #define HX711_G_DOUT_PIN GPIO_PIN_10
 
-/* ---- HC-SR04 身高（查樊听）：Trig=PB9, Echo=PB8(FT, TIM4_CH3 输入捕获) ----
+/* ---- HC-SR04 身高（查梵听）：Trig=PB9, Echo=PB8(FT, TIM4_CH3 输入捕获) ----
  */
 #define HCSR04_TRIG_PORT GPIOB
 #define HCSR04_TRIG_PIN GPIO_PIN_9
 #define HCSR04_ECHO_PORT GPIOB
 #define HCSR04_ECHO_PIN GPIO_PIN_8
 
-/* ---- DS18B20 温度（查樊听）：单总线 PB5(FT) ---- */
+/* ---- DS18B20 温度（查梵听）：单总线 PB5(FT) ---- */
 #define DS18B20_PORT GPIOB
 #define DS18B20_PIN GPIO_PIN_5
 

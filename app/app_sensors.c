@@ -15,8 +15,8 @@
 #include "reaction.h"
 
 const hs_sensor_t g_hs_registry[] = {
-    {HS_ITEM_HEIGHT, "height", "查樊听", hcsr04_init, hcsr04_measure},
-    {HS_ITEM_WEIGHT, "weight", "查樊听", hx711_weight_init,
+    {HS_ITEM_HEIGHT, "height", "查梵听", hcsr04_init, hcsr04_measure},
+    {HS_ITEM_WEIGHT, "weight", "查梵听", hx711_weight_init,
      hx711_weight_measure},
     {HS_ITEM_HR_SPO2, "hr_spo2", "王宇浩（组长）", max30102_init,
      max30102_measure},

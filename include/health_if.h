@@ -39,8 +39,8 @@ typedef enum {
  * @brief 8 项测量项枚举，顺序与 measurement_record_t 中指标字段顺序一致。
  */
 typedef enum {
-  HS_ITEM_HEIGHT = 0, /* 身高          —— 查樊听 */
-  HS_ITEM_WEIGHT,     /* 体重          —— 查樊听 */
+  HS_ITEM_HEIGHT = 0, /* 身高          —— 查梵听 */
+  HS_ITEM_WEIGHT,     /* 体重          —— 查梵听 */
   HS_ITEM_BODY,       /* BMI/体脂率    —— 算法(王宇浩) 由身高体重导出 */
   HS_ITEM_HR_SPO2,    /* 心率+血氧     —— 王宇浩 */
   HS_ITEM_BALANCE,    /* 平衡晃动指数  —— 刘晏铭 */

@@ -1,7 +1,7 @@
 /**
  * @file    hx711_weight.h
  * @brief   HX711#1 体重（50kg×4 全桥），软件时序，含标定
- * @owner   查樊听
+ * @owner   查梵听
  *
  * 统一测量接口：hx711_weight\_init() 初始化，hx711_weight\_measure() 采一次写入
  * hs_sample_t。 未实现前一律返回 HS_NOT_IMPLEMENTED。
