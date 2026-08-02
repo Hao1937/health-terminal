@@ -50,6 +50,7 @@ health-terminal/
 ├── algorithms/     纯算法（PC 可编译测试）：filters / spo2_hr / balance / bodyfat / health_score / crc16 / record_codec
 ├── app/            裸机主状态机、UI 流程、传感器注册表、main.c
 ├── web/            dashboard.html —— Web Bluetooth 单页看板（安卓 Chrome）
+├── esp32/          ESP-WROOM-32 BLE 网关（UART → FFE0/FFE1 Notify）
 ├── tests/          host 单元测试（ctest）
 ├── docs/           接口文档 / 引脚分配表 / 开发环境搭建 / 协作流程
 ├── cmake/          交叉编译工具链文件、固件构建脚本

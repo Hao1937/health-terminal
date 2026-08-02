@@ -4,6 +4,7 @@
  * @owner   刘晏铭
  *
  * 发送侧直接复用已冻结的 record_codec 帧格式，web/dashboard.html 据此解析。
+ * ble_init() 只确认 MCU 侧透传通道已启用，不代表手机已经连接。
  */
 #ifndef MODULE_BLE_H
 #define MODULE_BLE_H
