@@ -14,6 +14,8 @@
 
 #if defined(MODULE_ENABLED_MAX30102)
 
+#include <stdio.h>
+
 #include "board.h"
 #include "delay.h"
 #include "i2c_bus.h"
@@ -42,7 +44,7 @@
 #define BYTES_PER_SAMPLE 6u             /* SpO2 模式：RED(3)+IR(3) */
 
 #define SAMPLE_RATE_HZ 100u /* 有效 FIFO 速率（400Hz/4） */
-#define TARGET_SAMPLES 200u /* 约 2s，覆盖数个心动周期 */
+#define TARGET_SAMPLES 300u /* 约 3s，静息心率下也能稳定覆盖多个周期 */
 #define MIN_SAMPLES 64u     /* 少于此认为没放手指/信号太短 */
 #define MEASURE_TIMEOUT_MS 4000u
 
@@ -51,6 +53,37 @@ static int wr_reg(uint8_t reg, uint8_t val) {
 }
 static int rd_reg(uint8_t reg, uint8_t *val) {
   return i2c_mem_read(MAX30102_ADDR, reg, val, 1);
+}
+
+/* 仅供真板调试：打印原始光电信号的直流量与峰峰值，定位 UNSTABLE 原因。 */
+static void log_signal_stats(const int32_t *ir, const int32_t *red, size_t n,
+                             hs_status_t status) {
+  int32_t ir_min = ir[0], ir_max = ir[0];
+  int32_t red_min = red[0], red_max = red[0];
+  size_t ir_min_i = 0, ir_max_i = 0;
+  int64_t ir_sum = 0, red_sum = 0;
+  for (size_t i = 0; i < n; ++i) {
+    if (ir[i] < ir_min) {
+      ir_min = ir[i];
+      ir_min_i = i;
+    }
+    if (ir[i] > ir_max) {
+      ir_max = ir[i];
+      ir_max_i = i;
+    }
+    if (red[i] < red_min) red_min = red[i];
+    if (red[i] > red_max) red_max = red[i];
+    ir_sum += ir[i];
+    red_sum += red[i];
+  }
+  int64_t ir_dc = ir_sum / (int64_t)n;
+  printf(
+      "[max30102] n=%lu status=%s ir_dc=%ld ir=[%ld@%lu,%ld@%lu] "
+      "first=%ld last=%ld red_dc=%ld red_pp=%ld\r\n",
+      (unsigned long)n, hs_status_str(status), (long)ir_dc, (long)ir_min,
+      (unsigned long)ir_min_i, (long)ir_max, (unsigned long)ir_max_i,
+      (long)ir[0], (long)ir[n - 1], (long)(red_sum / (int64_t)n),
+      (long)(red_max - red_min));
 }
 
 /* 清零 FIFO 三个指针，使下一次读从新鲜数据开始 */
@@ -140,10 +173,16 @@ hs_status_t max30102_measure(hs_sample_t *out) {
   spo2_hr_result_t res;
   hs_status_t st =
       spo2_hr_compute(ir_buf, red_buf, count, SAMPLE_RATE_HZ, &res);
-  if (st != HS_OK) return st; /* 传播 UNSTABLE/NOT_READY */
+  if (st != HS_OK) {
+    log_signal_stats(ir_buf, red_buf, count, st);
+    return st; /* 传播 UNSTABLE/NOT_READY */
+  }
 
   out->primary = res.heart_rate_bpm;
   out->secondary = res.spo2_x10;
+  printf("[max30102] n=%lu hr=%ld bpm spo2=%ld.%ld%%\r\n", (unsigned long)count,
+         (long)out->primary, (long)(out->secondary / 10),
+         (long)(out->secondary % 10));
   return HS_OK;
 }
 

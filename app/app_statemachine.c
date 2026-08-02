@@ -71,7 +71,12 @@ static void record_reset(void) {
 /* 采集全部已实现的测量项 */
 static void measure_all(void) {
   for (const hs_sensor_t *s = g_hs_registry; s->measure != NULL; ++s) {
-    if (s->init) (void)s->init();
+    hs_status_t init_st = s->init ? s->init() : HS_OK;
+    if (init_st != HS_OK) {
+      printf("[measure] %-9s (%s) init -> %s\r\n", s->name, s->owner,
+             hs_status_str(init_st));
+      continue;
+    }
     hs_sample_t sample = {HS_VALUE_INVALID, HS_VALUE_INVALID};
     hs_status_t st = s->measure(&sample);
     printf("[measure] %-9s (%s) -> %s", s->name, s->owner, hs_status_str(st));

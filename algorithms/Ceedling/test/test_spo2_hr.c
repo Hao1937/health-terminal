@@ -71,8 +71,8 @@ void test_returns_ok_for_periodic_pulse_signal(void) {
   int32_t red[200];
   for (int i = 0; i < 200; i++) {
     int j = i % 80;
-    ir[i] = (j < 10) ? 300 : 100;
-    red[i] = (j < 10) ? 366 : 200;
+    ir[i] = (j < 10) ? 102000 : 100000;
+    red[i] = (j < 10) ? 91400 : 90000;
   }
   spo2_hr_result_t res;
   hs_status_t st = spo2_hr_compute(ir, red, 200, 100, &res);
@@ -81,4 +81,16 @@ void test_returns_ok_for_periodic_pulse_signal(void) {
   TEST_ASSERT_EQUAL(1, res.valid);
   TEST_ASSERT_EQUAL(75, res.heart_rate_bpm);
   TEST_ASSERT_TRUE(res.spo2_x10 >= 700 && res.spo2_x10 <= 1000);
+}
+
+void test_rejects_no_finger_noise(void) {
+  int32_t ir[200];
+  int32_t red[200];
+  for (int i = 0; i < 200; ++i) {
+    ir[i] = 700 + (i % 7);
+    red[i] = 870 + (i % 5);
+  }
+  spo2_hr_result_t res;
+  TEST_ASSERT_EQUAL(HS_UNSTABLE, spo2_hr_compute(ir, red, 200, 100, &res));
+  TEST_ASSERT_EQUAL(0, res.valid);
 }
