@@ -17,6 +17,8 @@ extern I2C_HandleTypeDef g_sensor_i2c;
 
 /** @brief 初始化 I2C1（100kHz 标准模式，PB6/PB7）。 */
 void i2c_bus_init(void);
+/** @brief 通过 SCL 脉冲和 STOP 释放被从机拉低的 SDA，总线恢复后再初始化外设。 */
+void i2c_bus_recover(void);
 /** @brief 向 dev_addr(已左移) 的 reg 写 len 字节。返回 HAL_StatusTypeDef。 */
 int i2c_mem_write(uint16_t dev_addr, uint16_t reg, const uint8_t *buf,
                   uint16_t len);

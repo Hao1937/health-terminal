@@ -44,9 +44,9 @@
 #define BYTES_PER_SAMPLE 6u             /* SpO2 模式：RED(3)+IR(3) */
 
 #define SAMPLE_RATE_HZ 100u /* 有效 FIFO 速率（400Hz/4） */
-#define TARGET_SAMPLES 300u /* 约 3s，静息心率下也能稳定覆盖多个周期 */
+#define TARGET_SAMPLES 220u /* 约 2.2s：缩短等待，同时保留至少两个脉搏周期的机会 */
 #define MIN_SAMPLES 64u     /* 少于此认为没放手指/信号太短 */
-#define MEASURE_TIMEOUT_MS 4000u
+#define MEASURE_TIMEOUT_MS 3000u
 
 static int wr_reg(uint8_t reg, uint8_t val) {
   return i2c_mem_write(MAX30102_ADDR, reg, &val, 1);
@@ -97,18 +97,47 @@ static int fifo_reset(void) {
 
 hs_status_t max30102_init(void) {
   uint8_t id = 0;
-  if (rd_reg(REG_PART_ID, &id) != 0) return HS_TIMEOUT; /* I2C 无应答 */
-  if (id != PART_ID_MAX30102) return HS_TIMEOUT;        /* 器件不对 */
+  int rc = rd_reg(REG_PART_ID, &id);
+  if (rc != 0) {
+#if defined(YUHAO_BRINGUP)
+    printf("[max30102] init fail: PART_ID read rc=%d\r\n", rc);
+#endif
+    return HS_TIMEOUT; /* I2C 无应答 */
+  }
+  if (id != PART_ID_MAX30102) {
+#if defined(YUHAO_BRINGUP)
+    printf("[max30102] init fail: PART_ID=0x%02X expected=0x%02X\r\n", id,
+           PART_ID_MAX30102);
+#endif
+    return HS_TIMEOUT; /* 器件不对 */
+  }
 
   /* 软复位并等待复位位自清 */
-  if (wr_reg(REG_MODE_CONFIG, MODE_RESET) != 0) return HS_TIMEOUT;
+  rc = wr_reg(REG_MODE_CONFIG, MODE_RESET);
+  if (rc != 0) {
+#if defined(YUHAO_BRINGUP)
+    printf("[max30102] init fail: reset write rc=%d\r\n", rc);
+#endif
+    return HS_TIMEOUT;
+  }
   uint32_t t0 = tick_now_ms();
   do {
-    if (rd_reg(REG_MODE_CONFIG, &id) != 0) return HS_TIMEOUT;
-    if (tick_now_ms() - t0 > 100u) return HS_TIMEOUT;
+    rc = rd_reg(REG_MODE_CONFIG, &id);
+    if (rc != 0) {
+#if defined(YUHAO_BRINGUP)
+      printf("[max30102] init fail: reset status read rc=%d\r\n", rc);
+#endif
+      return HS_TIMEOUT;
+    }
+    if (tick_now_ms() - t0 > 100u) {
+#if defined(YUHAO_BRINGUP)
+      printf("[max30102] init fail: reset bit stuck MODE=0x%02X\r\n", id);
+#endif
+      return HS_TIMEOUT;
+    }
   } while (id & MODE_RESET);
 
-  int rc = 0;
+  rc = 0;
   rc |= fifo_reset();
   /* FIFO_CONFIG：采样平均=4(0b010<<5)、rollover
    * 使能(1<<4)、almost-full=17(0x0F) */
@@ -122,7 +151,12 @@ hs_status_t max30102_init(void) {
   rc |= wr_reg(REG_LED1_PA, 0x24);
   rc |= wr_reg(REG_LED2_PA, 0x24);
   rc |= fifo_reset();
-  if (rc != 0) return HS_TIMEOUT;
+  if (rc != 0) {
+#if defined(YUHAO_BRINGUP)
+    printf("[max30102] init fail: config write rc=%d\r\n", rc);
+#endif
+    return HS_TIMEOUT;
+  }
 
   return HS_OK;
 }

@@ -5,10 +5,50 @@
 #include "i2c_bus.h"
 
 #include "board.h"
+#include "delay.h"
 
 I2C_HandleTypeDef g_sensor_i2c;
 
 #define I2C_TIMEOUT_MS 100
+
+void i2c_bus_recover(void) {
+  GPIO_InitTypeDef g = {0};
+
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_I2C1_CLK_ENABLE();
+  __HAL_I2C_DISABLE(&g_sensor_i2c);
+
+  /* 临时切成开漏 GPIO：写 1 是释放总线，外部上拉负责拉高。 */
+  g.Pin = GPIO_PIN_6 | GPIO_PIN_7;
+  g.Mode = GPIO_MODE_OUTPUT_OD;
+  g.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &g);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6 | GPIO_PIN_7, GPIO_PIN_SET);
+  delay_us(5);
+
+  /* 从机若停在接收状态，最多 9 个时钟可以把它推进到释放 SDA。 */
+  for (uint8_t i = 0; i < 9 &&
+                      HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7) == GPIO_PIN_RESET;
+       ++i) {
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+    delay_us(5);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+    delay_us(5);
+  }
+
+  /* 生成 STOP：SDA 低 -> SCL 高 -> SDA 高。 */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
+  delay_us(5);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+  delay_us(5);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);
+  delay_us(5);
+
+  /* 交还给 I2C 外设的复用开漏模式；调用方随后执行 i2c_bus_init()。 */
+  g.Pin = GPIO_PIN_6 | GPIO_PIN_7;
+  g.Mode = GPIO_MODE_AF_OD;
+  HAL_GPIO_Init(GPIOB, &g);
+}
 
 void i2c_bus_init(void) {
   g_sensor_i2c.Instance = SENSOR_I2C;

@@ -45,11 +45,11 @@
 #define HX711_W_DOUT_PORT GPIOB
 #define HX711_W_DOUT_PIN GPIO_PIN_11
 
-/* ---- HX711#2 握力（王宇浩）：SCK=PA0, DOUT=PB10 ---- */
-#define HX711_G_SCK_PORT GPIOA
-#define HX711_G_SCK_PIN GPIO_PIN_0
-#define HX711_G_DOUT_PORT GPIOB
-#define HX711_G_DOUT_PIN GPIO_PIN_10
+/* ---- HX711#2 握力（王宇浩）：SCK=PB4, DOUT=PA8 ---- */
+#define HX711_G_SCK_PORT GPIOB
+#define HX711_G_SCK_PIN GPIO_PIN_4
+#define HX711_G_DOUT_PORT GPIOA
+#define HX711_G_DOUT_PIN GPIO_PIN_8
 
 /* ---- HC-SR04 身高（查梵听）：Trig=PB9, Echo=PB8(FT, TIM4_CH3 输入捕获) ----
  */

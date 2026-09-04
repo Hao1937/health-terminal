@@ -9,6 +9,7 @@
 #include "balance.h"
 #include "bodyfat_navy.h"
 #include "health_score.h"
+#include "grip_demo.h"
 #include "spo2_hr.h"
 #include "test_util.h"
 
@@ -104,6 +105,13 @@ static void test_spo2_hr(void) {
   CHECK_EQ(spo2_hr_compute(ir, red, 10, 100, &res), HS_NOT_READY);
 }
 
+static void test_grip_demo(void) {
+  printf("test_grip_demo\n");
+  CHECK_EQ(grip_demo_value(0), 318);
+  CHECK_EQ(grip_demo_value(2), 324);
+  CHECK_EQ(grip_demo_value(5), 318); /* 固定序列循环，便于重复演示 */
+}
+
 int main(void) {
   printf("== test_algorithms ==\n");
   test_bmi();
@@ -111,5 +119,6 @@ int main(void) {
   test_score();
   test_balance();
   test_spo2_hr();
+  test_grip_demo();
   return TEST_SUMMARY();
 }

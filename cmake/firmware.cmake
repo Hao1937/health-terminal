@@ -13,6 +13,14 @@ set_property(CACHE MODULE_SET PROPERTY STRINGS yuhao chafanting liuyanming full)
 # HC-SR04 发射面到地面的实际垂直高度；安装后用卷尺标定并覆盖此值。
 set(HCSR04_INSTALL_HEIGHT_MM "2000" CACHE STRING "HC-SR04 安装面离地高度(mm)")
 
+# 无 HX711 真板时可显式启用，返回一组确定性的演示握力读数，用于验证
+# UI/记录/BLE/评分链路。默认必须走真实传感器，避免正式构建混入伪造读数。
+option(GRIP_DEMO_MODE "握力模块使用软件演示数据（非真实传感器读数）" OFF)
+
+# 王宇浩个人上板调试入口：不依赖 OLED/矩阵键盘，串口自动调用自己的传感器。
+# 默认关闭，避免改变整机状态机和其他人的开发流程。
+option(YUHAO_BRINGUP "启用王宇浩个人传感器串口 bring-up 测试" OFF)
+
 set(ALL_MODULES
     max30102 hx711_weight hx711_grip hcsr04 ds18b20 mpu6050
     oled keypad reaction ble storage)
@@ -109,6 +117,14 @@ target_compile_definitions(firmware PRIVATE
     HSE_VALUE=8000000        # 最小系统板 8MHz 晶振
     HCSR04_INSTALL_HEIGHT_MM=${HCSR04_INSTALL_HEIGHT_MM}
 )
+if(GRIP_DEMO_MODE)
+    target_compile_definitions(firmware PRIVATE GRIP_DEMO_MODE=1)
+    message(WARNING "GRIP_DEMO_MODE=ON：握力输出为中期演示数据，不代表 HX711 真板标定结果")
+endif()
+if(YUHAO_BRINGUP)
+    target_compile_definitions(firmware PRIVATE YUHAO_BRINGUP=1)
+    message(STATUS "YUHAO_BRINGUP=ON：串口自动测试 MAX30102 与 HX711 握力")
+endif()
 # 逐模块打开「真实现」分支
 foreach(m ${ENABLED_MODULES})
     string(TOUPPER ${m} M_UP)

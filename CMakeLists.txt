@@ -42,6 +42,7 @@ set(HT_ALGO_SOURCES
     ${HT_ALGO_DIR}/bodyfat_navy.c
     ${HT_ALGO_DIR}/health_score.c
     ${HT_ALGO_DIR}/height.c
+    ${HT_ALGO_DIR}/grip_demo.c
 )
 
 add_library(health_algo STATIC ${HT_ALGO_SOURCES})

@@ -11,19 +11,50 @@
 
 #if defined(MODULE_ENABLED_HX711_GRIP)
 
+#include "grip_demo.h"
+
+#if !defined(GRIP_DEMO_MODE)
 #include "board.h"
 #include "hx711.h"
 #include "stm32f1xx_hal.h"
+#endif
+
+#if defined(GRIP_DEMO_MODE)
+
+/*
+ * 中期演示模式：在没有完成传感器接线/砝码标定时，仍可验证握力数据从
+ * 模块接口进入状态机、记录、OLED、BLE 与综合评分的完整链路。
+ * 这里返回的是明确标记的确定性软件数据，不是 HX711 实测数据。
+ */
+static uint32_t s_demo_index;
+
+hs_status_t hx711_grip_init(void) {
+  s_demo_index = 0;
+  return HS_OK;
+}
+
+hs_status_t hx711_grip_measure(hs_sample_t *out) {
+  if (out == 0) return HS_NOT_READY;
+  out->primary = grip_demo_value(s_demo_index++);
+  out->secondary = HS_VALUE_INVALID;
+  return HS_OK;
+}
+
+#else
+
+#include <stdio.h>
 
 /*
  * 标定常数：每 0.1kg 对应的净计数（raw - 皮重）。
- * 必须现场标定后填入：挂已知砝码/用测力计，读净计数除以「力(kg)×10」即得。
- * 下面是基于 1kg 量程悬臂梁(灵敏度~1.0mV/V) + HX711 128
- * 增益的量级估计，仅供先跑通， 中期前须用真实砝码两点标定校正（记录到 docs
- * 作为实测数据）。
+ * 2026-09-03 对装入握力计机构的 70kg 传感器现场标定：厨房秤作为参考，
+ * 1.286kg -> 4905 counts；2.591kg -> 10261 counts（两次均值），卸载残余
+ * 296 counts。轻载点给出 381.4 counts/0.1kg，高载点经零点残余校正给出
+ * 384.6 counts/0.1kg，取整为 384。烧录后复测 2.589kg 显示 2.6kg；但该
+ * 机构一次加载-卸载后零点会回弹数百 counts，轻载精度尚未验收。该结果只验证
+ * 到 2.591kg，70kg 全量程仍需经机械预加载、重新去皮和标准力源复核。
  */
 #ifndef GRIP_COUNTS_PER_01KG
-#define GRIP_COUNTS_PER_01KG 1200
+#define GRIP_COUNTS_PER_01KG 384
 #endif
 
 #define GRIP_WINDOW_MS 3000 /* 峰值保持窗口：给用户约 3s 用力 */
@@ -46,20 +77,34 @@ hs_status_t hx711_grip_init(void) {
   s_grip.gain = HX711_GAIN_A128; /* 称重用通道 A/128 最灵敏 */
   hx711_init(&s_grip);           /* hx711_init 会把 offset 清零 */
 
+#if defined(YUHAO_BRINGUP)
+  printf("[hx711_grip] DOUT ready before tare=%d\r\n",
+         hx711_is_ready(&s_grip));
+#endif
+
   /* 空载去皮：首次初始化时假定未握把手，多次平均作皮重基线。
      失败则保持 s_ready=0，下一轮 init 再试（避免把接线故障固化）。 */
   if (hx711_tare(&s_grip, GRIP_TARE_TIMES, 500) != 0) {
+#if defined(YUHAO_BRINGUP)
+    printf("[hx711_grip] tare failed: DOUT stayed not-ready\r\n");
+#endif
     return HS_TIMEOUT; /* DOUT 一直不就绪 → 接线/供电问题 */
   }
+#if defined(YUHAO_BRINGUP)
+  printf("[hx711_grip] tare offset=%ld\r\n", (long)s_grip.offset);
+#endif
   s_ready = 1;
   return HS_OK;
 }
 
 hs_status_t hx711_grip_measure(hs_sample_t *out) {
+  if (out == 0) return HS_NOT_READY;
   out->primary = HS_VALUE_INVALID;
   out->secondary = HS_VALUE_INVALID;
 
   int32_t peak_net = 0; /* 窗口内净计数峰值（约定：用力使 raw 增大） */
+  int32_t min_net = 0;
+  int32_t max_net = 0;
   int any = 0;
   uint32_t t0 = HAL_GetTick();
 
@@ -70,9 +115,15 @@ hs_status_t hx711_grip_measure(hs_sample_t *out) {
     }
     any = 1;
     int32_t net = raw - s_grip.offset;
+    if (net < min_net) min_net = net;
+    if (net > max_net) max_net = net;
     if (net > peak_net) peak_net = net;
   }
   if (!any) return HS_TIMEOUT;
+#if defined(YUHAO_BRINGUP)
+  printf("[hx711_grip] window net_min=%ld net_max=%ld\r\n", (long)min_net,
+         (long)max_net);
+#endif
   if (peak_net < GRIP_MIN_NET_COUNTS) return HS_UNSTABLE; /* 没测到有效握力 */
 
   /* 净计数峰值 → kg×10，四舍五入 */
@@ -82,6 +133,8 @@ hs_status_t hx711_grip_measure(hs_sample_t *out) {
   out->primary = grip_kg_x10;
   return HS_OK;
 }
+
+#endif /* GRIP_DEMO_MODE */
 
 #else /* 本板 MODULE_SET 未包含该模块：桩替代，仅供 app 注册表链接 */
 
