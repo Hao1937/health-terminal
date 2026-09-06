@@ -107,9 +107,13 @@ static void test_spo2_hr(void) {
 
 static void test_grip_demo(void) {
   printf("test_grip_demo\n");
-  CHECK_EQ(grip_demo_value(0), 318);
-  CHECK_EQ(grip_demo_value(2), 324);
-  CHECK_EQ(grip_demo_value(5), 318); /* 固定序列循环，便于重复演示 */
+  CHECK_EQ(grip_demo_value(0), 323);
+  CHECK_EQ(grip_demo_value(2), 397);
+  CHECK_EQ(grip_demo_value(101), 323); /* 101 个 0.1kg 档位循环 */
+  for (uint32_t i = 0; i < 202; ++i) {
+    int32_t value = grip_demo_value(i);
+    CHECK(value >= 300 && value <= 400);
+  }
 }
 
 int main(void) {

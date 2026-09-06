@@ -39,6 +39,10 @@ cmake --preset host && cmake --build --preset host && ctest --preset host
 
 每人只编译自己的模块子集：`cmake --preset stm32 -DMODULE_SET=yuhao|chafanting|liuyanming|full`
 
+> 当前测力计默认启用 `GRIP_DEMO_MODE`，每次测量输出 30.0~40.0 kg 的假数据。
+> 接入 HX711 真传感器时，使用
+> `cmake --preset stm32 -DGRIP_DEMO_MODE=OFF` 重新配置后再编译。
+
 ## 目录导览
 
 ```

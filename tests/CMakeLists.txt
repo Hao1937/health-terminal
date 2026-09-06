@@ -18,3 +18,19 @@ foreach(t ${HT_TESTS})
     endif()
     add_test(NAME ${t} COMMAND ${t})
 endforeach()
+
+# 假数据模块回归测试：模拟状态机每轮 measure 前都会调用 init 的真实流程。
+add_executable(test_hx711_grip_demo
+    test_hx711_grip_demo.c
+    ${CMAKE_SOURCE_DIR}/modules/hx711_grip/hx711_grip.c
+)
+target_include_directories(test_hx711_grip_demo PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/modules/hx711_grip
+)
+target_compile_definitions(test_hx711_grip_demo PRIVATE
+    MODULE_ENABLED_HX711_GRIP=1
+    GRIP_DEMO_MODE=1
+)
+target_link_libraries(test_hx711_grip_demo PRIVATE health_algo)
+add_test(NAME test_hx711_grip_demo COMMAND test_hx711_grip_demo)

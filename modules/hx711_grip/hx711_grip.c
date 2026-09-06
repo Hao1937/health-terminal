@@ -22,16 +22,14 @@
 #if defined(GRIP_DEMO_MODE)
 
 /*
- * 中期演示模式：在没有完成传感器接线/砝码标定时，仍可验证握力数据从
- * 模块接口进入状态机、记录、OLED、BLE 与综合评分的完整链路。
+ * 假数据模式：默认用 30.0~40.0kg 的软件数据验证握力数据从模块接口进入
+ * 状态机、记录、OLED、BLE 与综合评分的完整链路。
  * 这里返回的是明确标记的确定性软件数据，不是 HX711 实测数据。
  */
 static uint32_t s_demo_index;
 
-hs_status_t hx711_grip_init(void) {
-  s_demo_index = 0;
-  return HS_OK;
-}
+/* 状态机每次测量前都会调用 init；不要在这里重置序号，否则永远只输出首值。 */
+hs_status_t hx711_grip_init(void) { return HS_OK; }
 
 hs_status_t hx711_grip_measure(hs_sample_t *out) {
   if (out == 0) return HS_NOT_READY;

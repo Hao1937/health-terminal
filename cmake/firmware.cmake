@@ -13,9 +13,9 @@ set_property(CACHE MODULE_SET PROPERTY STRINGS yuhao chafanting liuyanming full)
 # HC-SR04 发射面到地面的实际垂直高度；安装后用卷尺标定并覆盖此值。
 set(HCSR04_INSTALL_HEIGHT_MM "2000" CACHE STRING "HC-SR04 安装面离地高度(mm)")
 
-# 无 HX711 真板时可显式启用，返回一组确定性的演示握力读数，用于验证
-# UI/记录/BLE/评分链路。默认必须走真实传感器，避免正式构建混入伪造读数。
-option(GRIP_DEMO_MODE "握力模块使用软件演示数据（非真实传感器读数）" OFF)
+# 默认返回 30.0~40.0kg 的确定性假数据，用于验证 UI/记录/BLE/评分链路。
+# 接入 HX711 真板时必须显式传入 -DGRIP_DEMO_MODE=OFF，恢复真实测量路径。
+option(GRIP_DEMO_MODE "握力模块使用软件演示数据（非真实传感器读数）" ON)
 
 # 王宇浩个人上板调试入口：不依赖 OLED/矩阵键盘，串口自动调用自己的传感器。
 # 默认关闭，避免改变整机状态机和其他人的开发流程。
@@ -119,7 +119,7 @@ target_compile_definitions(firmware PRIVATE
 )
 if(GRIP_DEMO_MODE)
     target_compile_definitions(firmware PRIVATE GRIP_DEMO_MODE=1)
-    message(WARNING "GRIP_DEMO_MODE=ON：握力输出为中期演示数据，不代表 HX711 真板标定结果")
+    message(WARNING "GRIP_DEMO_MODE=ON：握力输出为 30.0~40.0kg 假数据，不代表 HX711 真板测量结果")
 endif()
 if(YUHAO_BRINGUP)
     target_compile_definitions(firmware PRIVATE YUHAO_BRINGUP=1)

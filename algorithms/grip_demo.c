@@ -5,8 +5,10 @@
 #include "grip_demo.h"
 
 int32_t grip_demo_value(uint32_t index) {
-  /* 演示数据：约 32kg，用于没有接入 HX711 时验证整机链路。 */
-  static const int32_t values_kg_x10[] = {318, 321, 324, 319, 322};
-  return values_kg_x10[index %
-                       (sizeof(values_kg_x10) / sizeof(values_kg_x10[0]))];
+  /*
+   * 30.0~40.0kg 的确定性伪随机序列，0.1kg 为一步。
+   * 37 与 101 互质，因此一个周期内会覆盖全部 101 个可选值；先取模可
+   * 避免 index 很大时乘法溢出。确定性保证主机测试和整机演示可复现。
+   */
+  return 300 + (int32_t)(((index % 101U) * 37U + 23U) % 101U);
 }

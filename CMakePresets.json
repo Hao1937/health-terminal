@@ -28,7 +28,8 @@
       "cacheVariables": {
         "HT_BUILD": "firmware",
         "CMAKE_BUILD_TYPE": "MinSizeRel",
-        "MODULE_SET": "full"
+        "MODULE_SET": "full",
+        "GRIP_DEMO_MODE": "ON"
       }
     }
   ],
