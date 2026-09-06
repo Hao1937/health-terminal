@@ -25,10 +25,66 @@
 #include "ui_flow.h"
 
 static void current_record_prepare_partial(void);
+static void handle_ble_command(void);
 
 measurement_record_t g_current_record;
 static app_state_t s_state;
 static uint32_t s_tick_sec;
+
+static void current_record_recompute(void) {
+  g_current_record.timestamp = s_tick_sec;
+  if (g_current_record.height_mm == HS_VALUE_INVALID ||
+      g_current_record.weight_g == HS_VALUE_INVALID ||
+      bmi_compute(g_current_record.height_mm, g_current_record.weight_g,
+                  &g_current_record.bmi_x100) != HS_OK) {
+    g_current_record.bmi_x100 = HS_VALUE_INVALID;
+  }
+  int32_t score;
+  g_current_record.score =
+      health_score_compute(&g_current_record, &score) == HS_OK
+          ? score
+          : HS_VALUE_INVALID;
+  record_finalize(&g_current_record);
+}
+
+static const char *apply_remote_field(ble_field_t field, int32_t value) {
+  switch (field) {
+    case BLE_FIELD_HEIGHT:
+      if (value < 500 || value > 2500) return NULL;
+      g_current_record.height_mm = value;
+      return "H";
+    case BLE_FIELD_WEIGHT:
+      if (value < 2000 || value > 300000) return NULL;
+      g_current_record.weight_g = value;
+      return "W";
+    case BLE_FIELD_BODYFAT:
+      if (value < 0 || value > 700) return NULL;
+      g_current_record.bodyfat_x10 = value;
+      return "F";
+    case BLE_FIELD_HEART_RATE:
+      if (value < 20 || value > 250) return NULL;
+      g_current_record.heart_rate_bpm = value;
+      return "HR";
+    case BLE_FIELD_SPO2:
+      if (value < 500 || value > 1000) return NULL;
+      g_current_record.spo2_x10 = value;
+      return "O";
+    case BLE_FIELD_BALANCE:
+      if (value < 0 || value > 10000) return NULL;
+      g_current_record.balance_x10 = value;
+      return "B";
+    case BLE_FIELD_GRIP:
+      if (value < 0 || value > 2000) return NULL;
+      g_current_record.grip_kg_x10 = value;
+      return "G";
+    case BLE_FIELD_REACTION:
+      if (value < 50 || value > 10000) return NULL;
+      g_current_record.reaction_ms = value;
+      return "R";
+    default:
+      return NULL;
+  }
+}
 
 /* 把注册表某项的采样结果落到记录对应字段 */
 static void store_sample(hs_item_t item, const hs_sample_t *s) {
@@ -72,6 +128,68 @@ static void current_record_prepare_partial(void) {
 }
 
 static void record_reset(void) { current_record_prepare_partial(); }
+
+static void handle_ble_command(void) {
+  const ble_command_t command = ble_poll_command();
+  if (command == BLE_CMD_NONE) return;
+  if (command == BLE_CMD_PING) {
+    (void)ble_send_status("PONG " FW_VERSION_STR);
+    return;
+  }
+  if (command == BLE_CMD_GET_CURRENT) {
+    (void)ble_send_status("CURRENT");
+    (void)ble_send_record(&g_current_record);
+    return;
+  }
+  if (command == BLE_CMD_GET_HISTORY) {
+    char status[32];
+    const uint16_t count = storage_count();
+    (void)snprintf(status, sizeof(status), "HISTORY_BEGIN %u",
+                   (unsigned)count);
+    (void)ble_send_status(status);
+    for (uint16_t i = 0; i < count; ++i) {
+      measurement_record_t record;
+      if (storage_read(i, &record) == HS_OK) {
+        (void)ble_send_record(&record);
+      }
+    }
+    (void)ble_send_status("HISTORY_END");
+    return;
+  }
+  if (command == BLE_CMD_SET_FIELD) {
+    ble_field_t field;
+    int32_t value;
+    char status[16];
+    if (!ble_get_pending_set(&field, &value)) {
+      (void)ble_send_status("ERR SET_PARSE");
+      return;
+    }
+    const char *field_name = apply_remote_field(field, value);
+    if (field_name == NULL) {
+      (void)ble_send_status("ERR SET_RANGE");
+      return;
+    }
+    (void)snprintf(status, sizeof(status), "OK %s", field_name);
+    (void)ble_send_status(status);
+    return;
+  }
+  if (command == BLE_CMD_APPLY || command == BLE_CMD_SAVE) {
+    current_record_recompute();
+    if (command == BLE_CMD_SAVE) {
+      if (storage_append(&g_current_record) != HS_OK) {
+        (void)ble_send_status("ERR SAVE");
+        return;
+      }
+      (void)ble_send_status("SAVED");
+    } else {
+      (void)ble_send_status("APPLIED");
+    }
+    (void)ble_send_record(&g_current_record);
+    ui_request_redraw();
+    return;
+  }
+  (void)ble_send_status("ERR UNKNOWN_COMMAND");
+}
 
 /* 采集单个测量项（供 ui_flow 按项触发，而不是每次都跑全表） */
 static void measure_registry_item(hs_item_t item) {
@@ -133,6 +251,7 @@ void app_tick(void) {
   /* 心跳：LED 每 500ms 翻转，证明主循环存活 */
   static uint32_t last_blink;
   uint32_t now = HAL_GetTick();
+  handle_ble_command();
   if (now - last_blink >= 500) {
     last_blink = now;
     LED_STATUS_TOGGLE();

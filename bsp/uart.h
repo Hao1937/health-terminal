@@ -18,5 +18,7 @@ extern UART_HandleTypeDef g_ble_uart;   /* USART2，BLE 模块 */
 void uart_init(void);
 /** @brief 向 BLE 串口阻塞发送一段字节（ble 模块用）。 */
 void ble_uart_send(const uint8_t *data, size_t len);
+/** @brief 非阻塞读取 BLE 串口的一个字节；读到返回 1，否则返回 0。 */
+int ble_uart_receive_byte(uint8_t *out);
 
 #endif /* BSP_UART_H */

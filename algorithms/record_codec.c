@@ -28,25 +28,30 @@ static uint16_t get_u16le(const uint8_t *p) {
   return (uint16_t)(p[0] | ((uint16_t)p[1] << 8));
 }
 
+size_t frame_encode(uint8_t type, const uint8_t *payload, uint16_t payload_len,
+                    uint8_t *out, size_t cap) {
+  const size_t total = FRAME_OVERHEAD + payload_len;
+  if (out == NULL || cap < total || (payload_len != 0 && payload == NULL)) {
+    return 0;
+  }
+  out[0] = FRAME_SOF0;
+  out[1] = FRAME_SOF1;
+  out[2] = type;
+  put_u16le(&out[3], payload_len);
+  for (uint16_t i = 0; i < payload_len; ++i) {
+    out[FRAME_HEADER_LEN + i] = payload[i];
+  }
+  const uint16_t crc = crc16_ccitt(&out[2], (size_t)(3 + payload_len));
+  put_u16le(&out[FRAME_HEADER_LEN + payload_len], crc);
+  return total;
+}
+
 size_t frame_encode_record(const measurement_record_t *rec, uint8_t *out,
                            size_t cap) {
   const uint16_t payload_len = (uint16_t)sizeof(measurement_record_t);
-  const size_t total = FRAME_OVERHEAD + payload_len;
-  if (cap < total) return 0;
-
-  out[0] = FRAME_SOF0;
-  out[1] = FRAME_SOF1;
-  out[2] = (uint8_t)FRAME_TYPE_RECORD;
-  put_u16le(&out[3], payload_len);
-
-  /* record 各字段本就是小端存储（LE 主机/STM32），直接按字节拷贝 */
-  const uint8_t *src = (const uint8_t *)rec;
-  for (uint16_t i = 0; i < payload_len; ++i) out[FRAME_HEADER_LEN + i] = src[i];
-
-  /* CRC 覆盖 [TYPE .. PAYLOAD]，即从 out[2] 起、长度 1+2+payload_len */
-  uint16_t crc = crc16_ccitt(&out[2], (size_t)(3 + payload_len));
-  put_u16le(&out[FRAME_HEADER_LEN + payload_len], crc);
-  return total;
+  if (rec == NULL) return 0;
+  return frame_encode((uint8_t)FRAME_TYPE_RECORD, (const uint8_t *)rec,
+                      payload_len, out, cap);
 }
 
 size_t frame_decode_record(const uint8_t *in, size_t len,

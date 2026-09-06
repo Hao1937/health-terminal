@@ -24,6 +24,10 @@ void record_finalize(measurement_record_t *rec);
 /** @brief 校验 record 的 version 与 crc16，正确返回 1。 */
 int record_verify(const measurement_record_t *rec);
 
+/** @brief 编码任意协议帧，供 ACK/HELLO/命令响应复用。 */
+size_t frame_encode(uint8_t type, const uint8_t *payload, uint16_t payload_len,
+                    uint8_t *out, size_t cap);
+
 /**
  * @brief 把一条 record 打包成一帧（FRAME_TYPE_RECORD）写入 out。
  * @param rec   源记录

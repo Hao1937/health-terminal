@@ -33,3 +33,8 @@ void uart_init(void) {
 void ble_uart_send(const uint8_t *data, size_t len) {
   HAL_UART_Transmit(&g_ble_uart, (uint8_t *)data, (uint16_t)len, HAL_MAX_DELAY);
 }
+
+int ble_uart_receive_byte(uint8_t *out) {
+  if (out == NULL) return 0;
+  return HAL_UART_Receive(&g_ble_uart, out, 1, 0) == HAL_OK ? 1 : 0;
+}

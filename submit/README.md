@@ -16,9 +16,9 @@
 4. 反应时间测试：PB1 LED、PB0 独立按键、EXTI0 中断、抢跑和超时处理；
 5. 片内 Flash 历史记录：启动扫描、顺序追加、读取、CRC 校验及写满后重置；
 6. MPU6050 姿态采样、互补滤波和平衡晃动指数；
-7. STM32 USART2 二进制记录透传；
-8. ESP32-WROOM-32 UART→BLE Notify 网关；
-9. Web Bluetooth 单页看板、BLE 分包重组、双层 CRC 校验和安卓端兼容处理；
+7. STM32 USART2 二进制记录上报与 ASCII 写入命令；
+8. ESP32-WROOM-32 UART↔BLE Notify/Write 双向透明网关；
+9. Web Bluetooth 单页看板、BLE 分包重组、双层 CRC、安卓兼容及手机修改/保存体测值；
 10. 睁眼/闭眼平衡对照实验的可复现流程。
 
 ## 2. 文档索引
@@ -32,6 +32,7 @@
 | [05-BLE与Web看板联调.md](05-BLE与Web看板联调.md) | STM32→ESP32→BLE→手机网页完整链路、HTTPS 隧道和排障 |
 | [06-测试与验收记录.md](06-测试与验收记录.md) | 自动测试、真机检查、截图/日志/原始帧证据清单 |
 | [07-GitHub提交清单.md](07-GitHub提交清单.md) | 应上传与排除文件、提交拆分、PR 目标和评审说明 |
+| [08-本次修改-硬件接线-全流程测试与提交清单.md](08-本次修改-硬件接线-全流程测试与提交清单.md) | 本轮双向写入修改、整机接线、手机验收全流程及最终 PR 清单 |
 
 ## 3. 最短演示路径
 
@@ -40,7 +41,8 @@
 3. 通过 OLED 和矩阵键盘分别演示 Balance、Reaction 和 History；
 4. 给 ESP32 烧录 `esp32/ble_gateway/ble_gateway.ino`；
 5. 手机通过 HTTPS 打开 `web/dashboard.html`，先连接 `HealthTerminal-Gateway`；
-6. 在 STM32 选择 `6.Score/Upload → Start`，确认网页收到记录。
+6. 在 STM32 选择 `6.Score/Upload → Start`，确认网页收到记录；
+7. 在网页编辑一个字段，依次验证 `OK`、`APPLIED`、回读，再用 `SAVE` 验证断电历史保持。
 
 ## 4. 重要边界与如实说明
 

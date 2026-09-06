@@ -46,6 +46,22 @@ static void test_record_crc(void) {
   CHECK_EQ(record_verify(&bad), 0);
 }
 
+static void test_generic_frame(void) {
+  printf("test_generic_frame\n");
+  static const uint8_t payload[] = {'P', 'O', 'N', 'G'};
+  uint8_t frame[FRAME_OVERHEAD + sizeof(payload)];
+  const size_t n = frame_encode((uint8_t)FRAME_TYPE_HELLO, payload,
+                                sizeof(payload), frame, sizeof(frame));
+  CHECK_EQ(n, sizeof(frame));
+  CHECK_EQ(frame[0], FRAME_SOF0);
+  CHECK_EQ(frame[1], FRAME_SOF1);
+  CHECK_EQ(frame[2], FRAME_TYPE_HELLO);
+  CHECK_EQ(frame[3], sizeof(payload));
+  CHECK_EQ(frame[4], 0);
+  CHECK_EQ(crc16_ccitt(&frame[2], 3 + sizeof(payload)),
+           (uint16_t)(frame[n - 2] | ((uint16_t)frame[n - 1] << 8)));
+}
+
 /* 帧编码→解码往返，字段完全还原 */
 static void test_frame_roundtrip(void) {
   printf("test_frame_roundtrip\n");
@@ -91,6 +107,7 @@ int main(void) {
   printf("== test_codec ==\n");
   test_crc_known_vector();
   test_record_crc();
+  test_generic_frame();
   test_frame_roundtrip();
   test_frame_tamper();
   return TEST_SUMMARY();

@@ -12,8 +12,37 @@
 #include "health_if.h"
 #include "health_record.h"
 
+typedef enum {
+  BLE_CMD_NONE = 0,
+  BLE_CMD_PING,
+  BLE_CMD_GET_CURRENT,
+  BLE_CMD_GET_HISTORY,
+  BLE_CMD_SET_FIELD,
+  BLE_CMD_APPLY,
+  BLE_CMD_SAVE,
+  BLE_CMD_UNKNOWN,
+} ble_command_t;
+
+typedef enum {
+  BLE_FIELD_NONE = 0,
+  BLE_FIELD_HEIGHT,
+  BLE_FIELD_WEIGHT,
+  BLE_FIELD_BODYFAT,
+  BLE_FIELD_HEART_RATE,
+  BLE_FIELD_SPO2,
+  BLE_FIELD_BALANCE,
+  BLE_FIELD_GRIP,
+  BLE_FIELD_REACTION,
+} ble_field_t;
+
 hs_status_t ble_init(void);
 /** @brief 把一条记录打包成数据帧并经 BLE 串口发出。 */
 hs_status_t ble_send_record(const measurement_record_t *rec);
+/** @brief 发送带 CRC 的文本状态帧（FRAME_TYPE_HELLO）。 */
+hs_status_t ble_send_status(const char *text);
+/** @brief 轮询网页经 ESP32 转发来的换行结尾 ASCII 命令。 */
+ble_command_t ble_poll_command(void);
+/** @brief 读取最近一条 SET 命令解析出的字段和值。 */
+int ble_get_pending_set(ble_field_t *field, int32_t *value);
 
 #endif /* MODULE_BLE_H */

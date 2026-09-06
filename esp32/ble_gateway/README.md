@@ -10,7 +10,7 @@ ESP32 RX2(GPIO16)
 FFE0 / FFE1 → Android Chrome Web Bluetooth
 ```
 
-ESP32 不解析健康记录、不重算 CRC、不添加文本。STM32 已经输出完整的 59 字节 RECORD 帧，网关只按顺序分成最多 20 字节的 BLE notification。网页会自动重组分包。
+ESP32 不解析健康记录、不重算 CRC。STM32 输出的记录和状态帧会被拆成最多 20 字节的 BLE notification；网页写入 FFE1 的命令则由 ESP32 原样转发给 STM32。
 
 ## 1. 准备软件
 
@@ -56,7 +56,7 @@ USB-UART 芯片型号；若为 Silicon Labs CP210x，请从 [Silicon Labs 官方
 | STM32F103C8T6 | ESP32-WROOM-32 开发板 | 说明 |
 |---|---|---|
 | `PA2 / USART2_TX` | `RX2`（GPIO16） | STM32 数据进入 ESP32 |
-| `PA3 / USART2_RX` | `TX2`（GPIO17） | 当前固件没有反向 BLE 命令，可选接 |
+| `PA3 / USART2_RX` | `TX2`（GPIO17） | 双向命令通道，使用新版网页时必接 |
 | `GND` | `GND` | 必须共地 |
 
 当前数据方向最低只需要：
@@ -64,6 +64,12 @@ USB-UART 芯片型号；若为 Silicon Labs CP210x，请从 [Silicon Labs 官方
 ```text
 PA2 → RX2
 GND → GND
+```
+
+启用网页“读取当前记录/同步设备历史”时还必须连接：
+
+```text
+PA3 ← TX2(GPIO17)
 ```
 
 两边都是 3.3 V UART。不要把 5 V UART 直接接入 ESP32；不要把 STM32 数据接到 `RX0/TX0`。`RX0/TX0`（GPIO3/GPIO1）是 USB 串口下载和调试接口，`RX2/TX2` 才是本网关的数据接口。ESP32 建议使用 USB 独立供电，不要直接由 STM32 小功率 3.3 V 稳压器供电。
@@ -80,7 +86,7 @@ GATT 服务固定为：
 
 ```text
 Primary Service: 0000FFE0-0000-1000-8000-00805F9B34FB
-Notify Characteristic: 0000FFE1-0000-1000-8000-00805F9B34FB
+Notify + Write Characteristic: 0000FFE1-0000-1000-8000-00805F9B34FB
 Descriptor: 00002902-0000-1000-8000-00805F9B34FB
 ```
 
@@ -98,7 +104,7 @@ https://你的隧道地址.trycloudflare.com/dashboard.html
 4. 等网页显示“已连接”；
 5. 再在 STM32 上完成测量并进入结果页。
 
-不要先在手机系统蓝牙设置中配对；Web Bluetooth 是在网页设备选择器中连接。当前 STM32 进入结果页时只发送一次，网页必须先完成通知订阅。
+不要先在手机系统蓝牙设置中配对；Web Bluetooth 是在网页设备选择器中连接。STM32 进入结果页时主动发送一次；如果当时网页未订阅，可在连接后使用“同步设备历史”补取 Flash 记录。
 
 ## 5. 调试与故障排查
 

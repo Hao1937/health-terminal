@@ -27,6 +27,8 @@ Thumbs.db
 
 # HAL 由 scripts/fetch_hal.sh 按需获取，不入库
 /core/STM32CubeF1/
+/.local-certs/
+/esp32/ble_gateway/build/
 .clangd
 .settings/**
 .spec-workflow/**
