@@ -236,24 +236,7 @@ static void handle_history_trend(char key, ui_tick_result_t *r) {
   if (key == 'B') s_screen = UI_SCR_HISTORY_DETAIL;
 }
 
-static char normalize_nav_key(char key) {
-  switch (key) {
-    case '8':
-      return 'A'; /* 备用确认：避开 A/B/C/D 所在的第 4 列 */
-    case '9':
-    case '*':
-      return 'B'; /* 备用返回 */
-    case '0':
-    case '#':
-      return 'D'; /* 备用下一项/切换 */
-    default:
-      return key;
-  }
-}
-
 static void handle_key(char key, ui_tick_result_t *r) {
-  key = normalize_nav_key(key);
-
   if (key >= '1' && key <= '7' && s_screen != UI_SCR_ROOT_MENU) {
     s_root_sel = (uint8_t)(key - '1');
     if (k_root[s_root_sel].is_history) {
@@ -308,7 +291,7 @@ static void render_root_menu(void) {
 
 static void render_submenu(void) {
   const root_entry_t *e = &k_root[s_root_sel];
-  char line[24];
+  char line[48];
 
   show_text_line(0, e->label);
 
@@ -316,15 +299,40 @@ static void render_submenu(void) {
     snprintf(line, sizeof(line), "SCORE:%s",
              (g_current_record.score != HS_VALUE_INVALID) ? "OK" : "--");
   } else if (e->item_count == 2) {
-    snprintf(line, sizeof(line), "H:%s W:%s",
-             (g_current_record.height_mm != HS_VALUE_INVALID) ? "OK" : "--",
-             (g_current_record.weight_g != HS_VALUE_INVALID) ? "OK" : "--");
+    char height[20];
+    char weight[20];
+    if (g_current_record.height_mm == HS_VALUE_INVALID) {
+      snprintf(height, sizeof(height), "--");
+    } else {
+      /* mm -> cm，保留一位小数：1732mm 显示为 173.2CM。 */
+      snprintf(height, sizeof(height), "%ld.%ldCM",
+               (long)(g_current_record.height_mm / 10),
+               (long)(g_current_record.height_mm % 10));
+    }
+    if (g_current_record.weight_g == HS_VALUE_INVALID) {
+      snprintf(weight, sizeof(weight), "--");
+    } else {
+      /* g -> kg，保留一位小数：65300g 显示为 65.3KG。 */
+      snprintf(weight, sizeof(weight), "%ld.%ldKG",
+               (long)(g_current_record.weight_g / 1000),
+               (long)((g_current_record.weight_g % 1000) / 100));
+    }
+    snprintf(line, sizeof(line), "H:%s W:%s", height, weight);
   } else {
     const char *ok = "--";
     switch (e->items[0]) {
       case HS_ITEM_HR_SPO2:
-        ok =
-            (g_current_record.heart_rate_bpm != HS_VALUE_INVALID) ? "OK" : "--";
+        if (g_current_record.heart_rate_bpm != HS_VALUE_INVALID &&
+            g_current_record.spo2_x10 != HS_VALUE_INVALID) {
+          /* 血氧以 ×10 定点保存：976 显示为 97.6%。 */
+          snprintf(line, sizeof(line), "HR:%ld SPO2:%ld.%ld%%",
+                   (long)g_current_record.heart_rate_bpm,
+                   (long)(g_current_record.spo2_x10 / 10),
+                   (long)(g_current_record.spo2_x10 % 10));
+        } else {
+          snprintf(line, sizeof(line), "HR:-- SPO2:--");
+        }
+        ok = NULL;
         break;
       case HS_ITEM_BALANCE:
         if (g_current_record.balance_x10 != HS_VALUE_INVALID) {
@@ -362,7 +370,7 @@ static void render_submenu(void) {
     oled_show_text_inv(0, 4, "Back");
   }
   show_text_line(2, "");
-  show_text_line(5, "8OK 9BACK 0NEXT");
+  show_text_line(5, "A:OK B:BACK C/D:NAV");
   show_text_line(6, "");
 }
 
