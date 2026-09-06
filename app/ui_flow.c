@@ -344,7 +344,15 @@ static void render_submenu(void) {
         ok = NULL;
         break;
       case HS_ITEM_GRIP:
-        ok = (g_current_record.grip_kg_x10 != HS_VALUE_INVALID) ? "OK" : "--";
+        if (g_current_record.grip_kg_x10 != HS_VALUE_INVALID) {
+          /* 握力以 kg×10 定点保存：324 显示为 32.4KG。 */
+          snprintf(line, sizeof(line), "GRIP:%ld.%ldKG",
+                   (long)(g_current_record.grip_kg_x10 / 10),
+                   (long)(g_current_record.grip_kg_x10 % 10));
+        } else {
+          snprintf(line, sizeof(line), "GRIP:--");
+        }
+        ok = NULL;
         break;
       case HS_ITEM_REACTION:
         if (g_current_record.reaction_ms != HS_VALUE_INVALID) {
