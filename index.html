@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健康体测终端 · Web 看板</title>
+<style>
+  :root { --bg:#0f1420; --card:#1b2333; --fg:#e8eef7; --accent:#4cc2ff;
+          --muted:#8a97ad; --line:#303b50; --danger:#ff7d7d; --ok:#62d6a7; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;
+         background:var(--bg); color:var(--fg); padding:16px; }
+  main { max-width:1100px; margin:auto; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:18px; margin:24px 0 10px; }
+  .sub,.hint { color:var(--muted); font-size:13px; }
+  .sub { margin-bottom:14px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  button { background:var(--accent); color:#04121d; border:0; border-radius:10px;
+           padding:10px 14px; font-size:14px; font-weight:650; cursor:pointer; }
+  button.ghost { background:#2a3550; color:var(--fg); }
+  button.danger { background:#422a33; color:#ffb0b0; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .card { background:var(--card); border-radius:14px; padding:14px; }
+  .card .k { color:var(--muted); font-size:13px; }
+  .card .v { font-size:26px; font-weight:700; margin-top:6px; }
+  .card .u { color:var(--muted); font-size:12px; margin-left:4px; }
+  .score { grid-column:1/-1; text-align:center; }
+  .score .v { font-size:44px; color:var(--accent); }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px;
+          background:#2a3550; color:var(--muted); vertical-align:middle; }
+  .pill.ok { color:#061a13; background:var(--ok); }
+  .warning { display:none; color:#ffd4a8; background:#392b1f; border-radius:10px;
+             padding:10px 12px; margin-bottom:12px; font-size:13px; }
+  .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:12px; }
+  table { width:100%; border-collapse:collapse; min-width:900px; background:var(--card); }
+  th,td { padding:9px 10px; border-bottom:1px solid var(--line); text-align:right;
+          white-space:nowrap; font-size:13px; }
+  th { color:var(--muted); font-weight:600; position:sticky; top:0; background:#222c3e; }
+  th:first-child,td:first-child { text-align:left; }
+  tr:last-child td { border-bottom:0; }
+  .empty { color:var(--muted); text-align:center !important; padding:24px; }
+  #log { margin-top:16px; background:#0a0e17; border-radius:10px; padding:10px;
+         font:12px/1.5 ui-monospace,Consolas,monospace; color:#9fb3c8; height:150px;
+         overflow:auto; white-space:pre-wrap; }
+</style>
+</head>
+<body><main>
+  <h1>多维度智能健康体测终端 <span class="pill" id="conn">未连接</span></h1>
+  <div class="sub">双向 Web Bluetooth 看板 · 有效记录自动保存到本机浏览器 · 安卓 Chrome</div>
+  <div class="warning" id="secureWarning">当前页面不是安全上下文。电脑本机请使用 localhost；手机通过局域网访问时请启用 HTTPS。</div>
+  <div class="bar">
+    <button id="btnConnect">连接 BLE 设备</button>
+    <button id="btnDisconnect" class="ghost" disabled>断开</button>
+    <button id="btnPing" class="ghost" disabled>测试双向通信</button>
+    <button id="btnCurrent" class="ghost" disabled>读取当前记录</button>
+    <button id="btnSync" class="ghost" disabled>同步设备历史</button>
+    <button id="btnDemo" class="ghost">演示</button>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="k">身高</div><div class="v"><span id="height">--</span><span class="u">cm</span></div></div>
+    <div class="card"><div class="k">体重</div><div class="v"><span id="weight">--</span><span class="u">kg</span></div></div>
+    <div class="card"><div class="k">BMI</div><div class="v"><span id="bmi">--</span></div></div>
+    <div class="card"><div class="k">体脂率</div><div class="v"><span id="bodyfat">--</span><span class="u">%</span></div></div>
+    <div class="card"><div class="k">心率</div><div class="v"><span id="hr">--</span><span class="u">bpm</span></div></div>
+    <div class="card"><div class="k">血氧</div><div class="v"><span id="spo2">--</span><span class="u">%</span></div></div>
+    <div class="card"><div class="k">平衡晃动指数</div><div class="v"><span id="balance">--</span></div></div>
+    <div class="card"><div class="k">握力</div><div class="v"><span id="grip">--</span><span class="u">kg</span></div></div>
+    <div class="card"><div class="k">反应时间</div><div class="v"><span id="reaction">--</span><span class="u">ms</span></div></div>
+    <div class="card score"><div class="k">综合健康评分</div><div class="v"><span id="score">--</span><span class="u">/100</span></div></div>
+  </div>
+  <h2>历史记录</h2>
+  <div class="bar">
+    <button id="btnExport" class="ghost">导出 CSV</button>
+    <button id="btnClear" class="danger">清空浏览器历史</button>
+    <span class="hint" id="historySummary"></span>
+  </div>
+  <div class="table-wrap"><table><thead><tr>
+    <th>接收时间 / 设备秒</th><th>身高 cm</th><th>体重 kg</th><th>BMI</th><th>体脂 %</th>
+    <th>心率</th><th>血氧 %</th><th>平衡</th><th>握力 kg</th><th>反应 ms</th><th>评分</th>
+  </tr></thead><tbody id="historyBody"></tbody></table></div>
+  <div id="log"></div>
+<script>
+const SOF0=0xAA,SOF1=0x55,FRAME_TYPE_RECORD=0x01,FRAME_TYPE_ACK=0x02,FRAME_TYPE_HELLO=0x10;
+const RECORD_SIZE=52,RECORD_VERSION=0x01,INVALID=0x7FFFFFFF;
+const BLE_SERVICE=0xFFE0,BLE_CHAR=0xFFE1;
+const HISTORY_KEY="health-terminal.history.v1",HISTORY_LIMIT=200;
+const commandButtons=["btnPing","btnCurrent","btnSync"];
+let rxBuf=new Uint8Array(0),device,characteristic,manualDisconnect=false,reconnecting=false;
+let historyRecords=loadHistory();
+
+function log(msg){const el=document.getElementById("log");el.textContent+=`[${new Date().toLocaleTimeString()}] ${msg}\n`;el.scrollTop=el.scrollHeight;}
+function crc16Ccitt(bytes){let crc=0xFFFF;for(const value of bytes){crc^=value<<8;for(let b=0;b<8;b++)crc=(crc&0x8000)?((crc<<1)^0x1021)&0xFFFF:(crc<<1)&0xFFFF;}return crc;}
+function parseRecord(dv,off){
+  const version=dv.getUint16(off,true);if(version!==RECORD_VERSION){log(`记录版本不符: ${version}`);return null;}
+  const raw=new Uint8Array(dv.buffer,dv.byteOffset+off,RECORD_SIZE),recCrc=dv.getUint16(off+48,true);
+  if(crc16Ccitt(raw.subarray(0,48))!==recCrc){log("记录 CRC 失败");return null;}
+  return {timestamp:dv.getUint32(off+4,true),height_mm:dv.getInt32(off+8,true),weight_g:dv.getInt32(off+12,true),
+    bmi_x100:dv.getInt32(off+16,true),bodyfat_x10:dv.getInt32(off+20,true),hr_bpm:dv.getInt32(off+24,true),
+    spo2_x10:dv.getInt32(off+28,true),balance_x10:dv.getInt32(off+32,true),grip_kg_x10:dv.getInt32(off+36,true),
+    reaction_ms:dv.getInt32(off+40,true),score:dv.getInt32(off+44,true)};
+}
+function scaled(value,scale,decimals=1){return value===INVALID?"--":scale?(value/scale).toFixed(decimals):String(value);}
+function render(record,{store=true}={}){
+  const values={height:scaled(record.height_mm,10),weight:scaled(record.weight_g,1000),bmi:scaled(record.bmi_x100,100,2),
+    bodyfat:scaled(record.bodyfat_x10,10),hr:scaled(record.hr_bpm,0),spo2:scaled(record.spo2_x10,10),
+    balance:scaled(record.balance_x10,10),grip:scaled(record.grip_kg_x10,10),reaction:scaled(record.reaction_ms,0),score:scaled(record.score,0)};
+  for(const [id,value] of Object.entries(values))document.getElementById(id).textContent=value;
+  if(store)addHistory(record);log(`已接收有效记录：设备 t=${record.timestamp}s，评分=${values.score}`);
+}
+function onChunk(chunk){const merged=new Uint8Array(rxBuf.length+chunk.length);merged.set(rxBuf);merged.set(chunk,rxBuf.length);rxBuf=merged;tryParseFrames();}
+function tryParseFrames(){
+  let i=0;while(i+5<=rxBuf.length){
+    if(rxBuf[i]!==SOF0||rxBuf[i+1]!==SOF1){i++;continue;}
+    const type=rxBuf[i+2],len=rxBuf[i+3]|(rxBuf[i+4]<<8);
+    if((type===FRAME_TYPE_RECORD&&len!==RECORD_SIZE)||len>256){log(`帧长度异常，重新同步: type=${type}, len=${len}`);i++;continue;}
+    const total=5+len+2;if(i+total>rxBuf.length)break;
+    const crcCalc=crc16Ccitt(rxBuf.subarray(i+2,i+5+len)),crcRx=rxBuf[i+5+len]|(rxBuf[i+6+len]<<8);
+    if(crcCalc!==crcRx){log("帧 CRC 失败，重新同步");i++;continue;}
+    if(type===FRAME_TYPE_RECORD){const dv=new DataView(rxBuf.buffer,rxBuf.byteOffset+i,total),record=parseRecord(dv,5);if(record)render(record);}
+    else if(type===FRAME_TYPE_HELLO)log(`设备: ${new TextDecoder().decode(rxBuf.subarray(i+5,i+5+len))}`);
+    else if(type===FRAME_TYPE_ACK)log("设备已确认命令");else log(`忽略未知帧类型: ${type}`);i+=total;
+  }rxBuf=rxBuf.slice(i);
+}
+async function bindGatt(){
+  const server=await device.gatt.connect(),service=await server.getPrimaryService(BLE_SERVICE);
+  characteristic=await service.getCharacteristic(BLE_CHAR);await characteristic.startNotifications();
+  characteristic.addEventListener("characteristicvaluechanged",event=>{const value=event.target.value;onChunk(new Uint8Array(value.buffer,value.byteOffset,value.byteLength));});
+  rxBuf=new Uint8Array(0);setConnected(true);
+}
+async function connect(){
+  if(!navigator.bluetooth){alert("此浏览器不支持 Web Bluetooth，请使用安卓 Chrome。");return;}
+  try{manualDisconnect=false;device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[BLE_SERVICE]});
+    device.ongattserverdisconnected=onDisconnected;await bindGatt();log(`已连接: ${device.name||"(无名设备)"}`);await sendCommand("PING");}
+  catch(error){setConnected(false);log(`连接失败: ${error.message||error}`);}
+}
+async function onDisconnected(){
+  characteristic=undefined;rxBuf=new Uint8Array(0);setConnected(false);log("设备已断开");if(manualDisconnect||!device||reconnecting)return;
+  reconnecting=true;for(const delayMs of [800,1600,3000]){await new Promise(resolve=>setTimeout(resolve,delayMs));
+    try{await bindGatt();log("已自动重连");reconnecting=false;return;}catch(error){log(`自动重连尝试失败 (${delayMs} ms)`);}}
+  reconnecting=false;log("自动重连已停止，请手动重新连接");
+}
+function disconnect(){manualDisconnect=true;if(device?.gatt?.connected)device.gatt.disconnect();}
+function setConnected(connected){const pill=document.getElementById("conn");pill.textContent=connected?"已连接":"未连接";pill.classList.toggle("ok",connected);
+  document.getElementById("btnConnect").disabled=connected;document.getElementById("btnDisconnect").disabled=!connected;
+  for(const id of commandButtons)document.getElementById(id).disabled=!connected;}
+async function sendCommand(command){
+  if(!characteristic){log("命令未发送：设备未连接");return;}const bytes=new TextEncoder().encode(`${command}\n`);
+  try{if(characteristic.writeValueWithoutResponse)await characteristic.writeValueWithoutResponse(bytes);else await characteristic.writeValue(bytes);log(`已发送命令: ${command}`);}
+  catch(error){log(`命令发送失败: ${error.message||error}`);}
+}
+function recordSignature(record){return ["timestamp","height_mm","weight_g","bmi_x100","bodyfat_x10","hr_bpm","spo2_x10","balance_x10","grip_kg_x10","reaction_ms","score"].map(key=>record[key]).join("|");}
+function loadHistory(){try{const value=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");return Array.isArray(value)?value:[];}catch(error){return [];}}
+function saveHistory(){try{localStorage.setItem(HISTORY_KEY,JSON.stringify(historyRecords));}catch(error){log(`本地历史保存失败: ${error.message||error}`);}}
+function addHistory(record){const signature=recordSignature(record);if(!historyRecords.some(item=>recordSignature(item)===signature)){
+  historyRecords.unshift({...record,received_at:new Date().toISOString()});historyRecords=historyRecords.slice(0,HISTORY_LIMIT);saveHistory();renderHistory();}}
+function renderHistory(){
+  const body=document.getElementById("historyBody");body.textContent="";
+  if(!historyRecords.length){const row=body.insertRow(),cell=row.insertCell();cell.colSpan=11;cell.className="empty";cell.textContent="暂无记录。连接设备后同步历史，或先点击演示。";}
+  else for(const record of historyRecords){const row=body.insertRow(),time=record.received_at?new Date(record.received_at).toLocaleString():"本地时间未知";
+    const values=[`${time} / ${record.timestamp}s`,scaled(record.height_mm,10),scaled(record.weight_g,1000),scaled(record.bmi_x100,100,2),scaled(record.bodyfat_x10,10),
+      scaled(record.hr_bpm,0),scaled(record.spo2_x10,10),scaled(record.balance_x10,10),scaled(record.grip_kg_x10,10),scaled(record.reaction_ms,0),scaled(record.score,0)];
+    for(const value of values)row.insertCell().textContent=value;}
+  document.getElementById("historySummary").textContent=`浏览器已保存 ${historyRecords.length}/${HISTORY_LIMIT} 条`;
+}
+function exportCsv(){
+  if(!historyRecords.length){log("没有可导出的历史记录");return;}
+  const headers=["received_at","device_seconds","height_cm","weight_kg","bmi","bodyfat_pct","heart_rate_bpm","spo2_pct","balance","grip_kg","reaction_ms","score"];
+  const rows=historyRecords.map(r=>[r.received_at||"",r.timestamp,scaled(r.height_mm,10),scaled(r.weight_g,1000),scaled(r.bmi_x100,100,2),scaled(r.bodyfat_x10,10),scaled(r.hr_bpm,0),scaled(r.spo2_x10,10),scaled(r.balance_x10,10),scaled(r.grip_kg_x10,10),scaled(r.reaction_ms,0),scaled(r.score,0)]);
+  const csv="\uFEFF"+[headers,...rows].map(row=>row.map(value=>`"${String(value).replaceAll('"','""')}"`).join(",")).join("\r\n");
+  const link=document.createElement("a");link.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));link.download=`health-history-${new Date().toISOString().slice(0,10)}.csv`;link.click();URL.revokeObjectURL(link.href);
+}
+function clearHistory(){if(!confirm("只清空当前浏览器保存的历史，不会删除 STM32 Flash。确定继续吗？"))return;historyRecords=[];saveHistory();renderHistory();log("浏览器本地历史已清空");}
+function buildFakeFrame(){
+  const rec=new Uint8Array(RECORD_SIZE),dv=new DataView(rec.buffer);dv.setUint16(0,RECORD_VERSION,true);dv.setUint32(4,1234,true);
+  [[8,1732],[12,65300],[16,2180],[20,185],[24,72],[28,985],[32,25],[36,352],[40,240],[44,88]].forEach(([offset,value])=>dv.setInt32(offset,value,true));
+  dv.setUint16(48,crc16Ccitt(rec.subarray(0,48)),true);const frame=new Uint8Array(5+RECORD_SIZE+2);frame.set([SOF0,SOF1,FRAME_TYPE_RECORD,RECORD_SIZE,0]);frame.set(rec,5);
+  const crc=crc16Ccitt(frame.subarray(2,5+RECORD_SIZE));frame[57]=crc&0xFF;frame[58]=crc>>8;return frame;
+}
+document.getElementById("btnConnect").onclick=connect;document.getElementById("btnDisconnect").onclick=disconnect;
+document.getElementById("btnPing").onclick=()=>sendCommand("PING");document.getElementById("btnCurrent").onclick=()=>sendCommand("GET CURRENT");
+document.getElementById("btnSync").onclick=()=>sendCommand("GET HISTORY");document.getElementById("btnDemo").onclick=()=>{log("注入本地演示帧");onChunk(buildFakeFrame());};
+document.getElementById("btnExport").onclick=exportCsv;document.getElementById("btnClear").onclick=clearHistory;
+document.getElementById("secureWarning").style.display=window.isSecureContext?"none":"block";renderHistory();log("就绪：可先演示，或连接设备后读取当前记录/同步历史。");
+</script>
+</main></body>
+</html>
