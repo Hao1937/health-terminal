@@ -2,9 +2,10 @@
  * @file    reaction.c
  * @owner   刘晏铭
  *
- * 反应时间：PB1 点亮提示 LED，PB0 上拉按键走 EXTI0。测量流程为先随机等待
- * 一小段时间，等待期间按键视为抢跑；LED 亮起时记录 t0，中断回调记录 t1，
- * out->primary 返回 t1-t0(ms)。
+ * 反应时间：PB1 点亮提示 LED，PB0 由一根导线常态短接到 GND（低电平）。
+ * 测量流程为先随机等待，等待期间拔掉导线视为抢跑；LED 亮起时记录 t0，
+ * 拔掉导线使 PB0 被内部上拉为高电平并触发 EXTI0，回调记录 t1，out->primary
+ * 返回 t1-t0(ms)。
  */
 #include "reaction.h"
 
@@ -43,7 +44,8 @@ static void reaction_led_off(void) {
   HAL_GPIO_WritePin(REACTION_LED_PORT, REACTION_LED_PIN, GPIO_PIN_RESET);
 }
 
-static int reaction_button_down(void) {
+/* PB0 接 GND 时为就绪低电平；拔掉导线后由内部上拉读为高电平。 */
+static int reaction_signal_is_low(void) {
   return HAL_GPIO_ReadPin(REACTION_BTN_PORT, REACTION_BTN_PIN) ==
          GPIO_PIN_RESET;
 }
@@ -52,14 +54,14 @@ static void reaction_show_ready(void) {
   oled_clear();
   oled_show_text(0, 0, "REACTION TEST");
   oled_show_text(0, 2, "WAIT FOR LED");
-  oled_show_text(0, 3, "DO NOT PRESS");
-  oled_show_text(0, 5, "PB1 LED  PB0 KEY");
+  oled_show_text(0, 3, "KEEP PB0 AT GND");
+  oled_show_text(0, 5, "UNPLUG ON LED");
 }
 
 static void reaction_show_go(void) {
   oled_clear();
   oled_show_text(0, 0, "LED ON");
-  oled_show_text(0, 1, "PRESS NOW");
+  oled_show_text(0, 1, "UNPLUG PB0 NOW");
   oled_show_text(0, 3, "OOOOOOOOOOOOOOOOOOOO");
   oled_show_text(0, 4, "OOOOOOOOOOOOOOOOOOOO");
 }
@@ -107,20 +109,20 @@ static void reaction_show_trend(void) {
 static void reaction_show_false_start(void) {
   oled_clear();
   oled_show_text(0, 0, "FALSE START");
-  oled_show_text(0, 2, "PRESS AFTER LED");
+  oled_show_text(0, 2, "UNPLUG AFTER LED");
   oled_show_text(0, 4, "TRY AGAIN");
 }
 
 static void reaction_show_timeout(void) {
   oled_clear();
   oled_show_text(0, 0, "TIMEOUT");
-  oled_show_text(0, 2, "NO BUTTON PRESS");
+  oled_show_text(0, 2, "PB0 STAYED LOW");
   oled_show_text(0, 4, "TRY AGAIN");
 }
 
-static void reaction_show_release(void) {
+static void reaction_show_connect(void) {
   oled_clear();
-  oled_show_text(0, 0, "RELEASE BUTTON");
+  oled_show_text(0, 0, "CONNECT PB0 GND");
   oled_show_text(0, 2, "THEN TEST STARTS");
 }
 
@@ -137,7 +139,7 @@ hs_status_t reaction_init(void) {
   reaction_led_off();
 
   g.Pin = REACTION_BTN_PIN;
-  g.Mode = GPIO_MODE_IT_FALLING;
+  g.Mode = GPIO_MODE_IT_RISING;
   g.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(REACTION_BTN_PORT, &g);
 
@@ -166,12 +168,13 @@ hs_status_t reaction_measure(hs_sample_t *out) {
   out->secondary = HS_VALUE_INVALID;
   reaction_led_off();
 
-  if (reaction_button_down()) {
-    reaction_show_release();
+  /* 反应导线必须先把 PB0 拉低；未接线时内部上拉会读高。 */
+  if (!reaction_signal_is_low()) {
+    reaction_show_connect();
     uint32_t release_t0 = HAL_GetTick();
-    while (reaction_button_down()) {
+    while (!reaction_signal_is_low()) {
       if (HAL_GetTick() - release_t0 > REACTION_TIMEOUT_MS) {
-        reaction_show_false_start();
+        reaction_show_connect();
         HAL_Delay(REACTION_RESULT_HOLD_MS);
         return HS_UNSTABLE;
       }
@@ -190,7 +193,7 @@ hs_status_t reaction_measure(hs_sample_t *out) {
                      (HAL_GetTick() % REACTION_FALSE_DELAY_SPAN_MS);
   uint32_t wait_t0 = HAL_GetTick();
   while (HAL_GetTick() - wait_t0 < wait_ms) {
-    if (s_false_start || reaction_button_down()) {
+    if (s_false_start || !reaction_signal_is_low()) {
       s_waiting = 0;
       reaction_led_off();
       reaction_show_false_start();

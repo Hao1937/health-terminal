@@ -1,6 +1,6 @@
 /**
  * @file    reaction.h
- * @brief   反应时间测试（LED=PB1，按键=PB0/EXTI0）
+ * @brief   反应时间测试（LED=PB1；PB0 常态接 GND，拔线产生 EXTI0 上升沿）
  * @owner   刘晏铭
  *
  * 统一测量接口：reaction\_init() 初始化，reaction\_measure() 采一次写入
