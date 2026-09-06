@@ -7,7 +7,8 @@
  * 回放测试）。
  *
  * 配置：SpO2 模式（RED+IR 双通道），采样率 400Hz + 4 点平均 = 有效 100Hz，18bit
- * 分辨率。 measure() 清空 FIFO 后连续取样约 2s，再交 spo2_hr_compute 得心率与
+ * 分辨率。每次启动 LED 后先等待光路稳定、清空 FIFO，再连续取样约 3s，交
+ * spo2_hr_compute 得心率与
  * SpO2。
  */
 #include "max30102.h"
@@ -47,6 +48,7 @@
 #define TARGET_SAMPLES 300u /* 约 3s：覆盖多个脉搏周期，避免静息心率漏检 */
 #define MIN_SAMPLES 64u     /* 少于此认为没放手指/信号太短 */
 #define MEASURE_TIMEOUT_MS 4000u
+#define SENSOR_SETTLE_MS 500u /* 打开 LED 后丢弃启动瞬态，避免污染脉搏阈值 */
 
 static int wr_reg(uint8_t reg, uint8_t val) {
   return i2c_mem_write(MAX30102_ADDR, reg, &val, 1);
@@ -150,13 +152,17 @@ hs_status_t max30102_init(void) {
   /* LED 电流：RED/IR 各约 7mA（0x24 步进 0.2mA），指尖测量足够 */
   rc |= wr_reg(REG_LED1_PA, 0x24);
   rc |= wr_reg(REG_LED2_PA, 0x24);
-  rc |= fifo_reset();
   if (rc != 0) {
 #if defined(YUHAO_BRINGUP)
     printf("[max30102] init fail: config write rc=%d\r\n", rc);
 #endif
     return HS_TIMEOUT;
   }
+
+  /* 初始化后首个 FIFO 样本会包含 LED/指尖接触跃迁；等待稳定后重新清空，
+   * 保证上层算法只看到同一稳态光路下的脉搏波形。 */
+  delay_ms(SENSOR_SETTLE_MS);
+  if (fifo_reset() != 0) return HS_TIMEOUT;
 
   return HS_OK;
 }
