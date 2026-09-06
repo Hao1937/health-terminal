@@ -62,7 +62,7 @@ README.md
 docs/BLE联调.md
 ```
 
-本次提交 manifest 固定包含 `submit/` 下这 8 份文档：
+本次提交 manifest 固定包含 `submit/` 下这 9 份文档：
 
 ```text
 submit/README.md
@@ -73,6 +73,7 @@ submit/04-反应测试-Flash历史-平衡实验.md
 submit/05-BLE与Web看板联调.md
 submit/06-测试与验收记录.md
 submit/07-GitHub提交清单.md
+submit/08-本次修改-硬件接线-全流程测试与提交清单.md
 ```
 
 当前阶段只保存在 `submit/`，不执行上传；用户后续明确要求上传时，将上述文档与本文件列出的源码一起提交。
@@ -170,6 +171,7 @@ feat(liuyanming): 完成交互、历史、平衡与 BLE Web 链路
 - STM32 USART2 二进制帧透传
 - ESP32 UART↔FFE1 Notify/Write 双向网关
 - Web Bluetooth 单页看板与安卓设备发现兼容
+- 手机逐项修改 STM32 当前记录并可保存到 Flash 历史
 
 ## 复现资料
 见 `submit/README.md`（如最终决定提交该目录）及模块 README。
@@ -181,10 +183,11 @@ feat(liuyanming): 完成交互、历史、平衡与 BLE Web 链路
 - [ ] STM32 真机菜单/键盘/反应/Flash/MPU6050 验证
 - [ ] ESP32 广播 FFE0/FFE1 验证
 - [ ] 安卓 HTTPS Web Bluetooth 真机记录验证
+- [ ] 手机 SET/APPLY/SAVE 与断电历史保持验证
 
 ## 已知限制
-- 体脂字段按当前 app 流程保持 `HS_VALUE_INVALID`
-- BLE 主动上报仍为单次发送、无逐帧 ACK；错过后可由网页重新同步 Flash 历史
+- 体脂若未由传感器/键盘产生，可由手机补录；空白仍为 `HS_VALUE_INVALID`
+- BLE 主动记录帧仍无逐帧 ACK；手机 SET 命令逐项等待状态确认，错过主动帧可同步历史
 - Flash 写满后整区擦除，无手动清空
 - 睁眼/闭眼实验条件及每次原始值需人工记录
 - Balance 即时页、History/Web 统一按 `balance_x10 / 10` 显示一位小数
@@ -218,6 +221,8 @@ git diff --stat
 - [ ] `app/ui_flow.h` 没有漏掉；
 - [ ] ESP32网关两个文件都在；
 - [ ] `dashboard.html` 的 `acceptAllDevices` 兼容修改在；
+- [ ] 手机编辑区及 `SET/APPLY/SAVE` 协议在；
+- [ ] PR diff 不含 `.github/workflows/pages.yml`（Pages 由独立 `gh-pages` 分支发布）；
 - [ ] 不提交重复 `BLE.md`；
 - [ ] 源码格式符合 clang-format（当前变更文件已通过 19.1.7 dry-run，最终提交集仍需复测）；
 - [ ] 测试结果和真机证据已写入 PR；
