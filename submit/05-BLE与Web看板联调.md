@@ -103,13 +103,13 @@ STM32 PA2 / USART2_TX → ESP32 GPIO16 / RX2
 STM32 GND             → ESP32 GND
 ```
 
-可选：
+双向命令回传：
 
 ```text
 STM32 PA3 / USART2_RX ← ESP32 GPIO17 / TX2
 ```
 
-当前没有网页到 STM32 的反向命令，所以 GPIO17 可不接。ESP32 建议用自己的 USB 独立供电；不要把 PA2 接到 GPIO3/RX0。
+GPIO17→PA3 是网页反向命令通道，使用“测试双向通信、读取当前记录、同步设备历史”时必须连接。ESP32 建议用自己的 USB 独立供电；不要把 PA2 接到 GPIO3/RX0。
 
 ### 4.2 Arduino IDE 烧录
 
@@ -258,7 +258,7 @@ new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
 8. 进入 `6.Score/Upload → Start`；
 9. 网页接收 59 字节记录并更新卡片。
 
-STM32每次进入结果页只发一次。如果先 Upload、后连接网页，这一帧会被 ESP32丢弃。退出结果页后当前记录会被 `record_reset()` 清空，因此必须重新完成需要的测量，再次进入 `Score/Upload`，不能直接对旧记录重发。
+STM32 每次进入结果页仍主动发送一次。如果先 Upload、后连接网页，这一帧会被 ESP32 丢弃；但记录已写入 Flash，连接后可在网页点击“同步设备历史”重新获取，无需重新测量。若仍停留在结果页，也可点击“读取当前记录”。
 
 ## 8. 分层排障
 
@@ -276,7 +276,7 @@ STM32每次进入结果页只发一次。如果先 Upload、后连接网页，�
 
 - FFE0 是 Primary Service；
 - FFE1 存在；
-- FFE1 支持 Notify；
+- FFE1 支持 Notify、Write 和 Write Without Response；
 - 有 `0x2902` CCCD。
 
 确认未被另一个应用连接。

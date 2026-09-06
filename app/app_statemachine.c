@@ -25,6 +25,7 @@
 #include "ui_flow.h"
 
 static void current_record_prepare_partial(void);
+static void handle_ble_command(void);
 
 measurement_record_t g_current_record;
 static app_state_t s_state;
@@ -72,6 +73,36 @@ static void current_record_prepare_partial(void) {
 }
 
 static void record_reset(void) { current_record_prepare_partial(); }
+
+static void handle_ble_command(void) {
+  const ble_command_t command = ble_poll_command();
+  if (command == BLE_CMD_NONE) return;
+  if (command == BLE_CMD_PING) {
+    (void)ble_send_status("PONG " FW_VERSION_STR);
+    return;
+  }
+  if (command == BLE_CMD_GET_CURRENT) {
+    (void)ble_send_status("CURRENT");
+    (void)ble_send_record(&g_current_record);
+    return;
+  }
+  if (command == BLE_CMD_GET_HISTORY) {
+    char status[32];
+    const uint16_t count = storage_count();
+    (void)snprintf(status, sizeof(status), "HISTORY_BEGIN %u",
+                   (unsigned)count);
+    (void)ble_send_status(status);
+    for (uint16_t i = 0; i < count; ++i) {
+      measurement_record_t record;
+      if (storage_read(i, &record) == HS_OK) {
+        (void)ble_send_record(&record);
+      }
+    }
+    (void)ble_send_status("HISTORY_END");
+    return;
+  }
+  (void)ble_send_status("ERR UNKNOWN_COMMAND");
+}
 
 /* 采集单个测量项（供 ui_flow 按项触发，而不是每次都跑全表） */
 static void measure_registry_item(hs_item_t item) {
@@ -126,6 +157,7 @@ void app_tick(void) {
   /* 心跳：LED 每 500ms 翻转，证明主循环存活 */
   static uint32_t last_blink;
   uint32_t now = HAL_GetTick();
+  handle_ble_command();
   if (now - last_blink >= 500) {
     last_blink = now;
     LED_STATUS_TOGGLE();

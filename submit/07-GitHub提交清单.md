@@ -168,7 +168,7 @@ feat(liuyanming): 完成交互、历史、平衡与 BLE Web 链路
 - 片内 Flash 历史记录
 - MPU6050 平衡晃动指数
 - STM32 USART2 二进制帧透传
-- ESP32 UART→FFE1 Notify 网关
+- ESP32 UART↔FFE1 Notify/Write 双向网关
 - Web Bluetooth 单页看板与安卓设备发现兼容
 
 ## 复现资料
@@ -184,7 +184,7 @@ feat(liuyanming): 完成交互、历史、平衡与 BLE Web 链路
 
 ## 已知限制
 - 体脂字段按当前 app 流程保持 `HS_VALUE_INVALID`
-- BLE 单次发送、无 ACK/重发，错过后需重新测量
+- BLE 主动上报仍为单次发送、无逐帧 ACK；错过后可由网页重新同步 Flash 历史
 - Flash 写满后整区擦除，无手动清空
 - 睁眼/闭眼实验条件及每次原始值需人工记录
 - Balance 即时页、History/Web 统一按 `balance_x10 / 10` 显示一位小数

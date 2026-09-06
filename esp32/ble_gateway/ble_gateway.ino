@@ -120,6 +120,18 @@ class DescriptorCallbacks final : public BLEDescriptorCallbacks {
   }
 };
 
+class CharacteristicCallbacks final : public BLECharacteristicCallbacks {
+ public:
+  void onWrite(BLECharacteristic *characteristic) override {
+    const auto value = characteristic->getValue();
+    for (size_t i = 0; i < value.length(); ++i) {
+      stm32Uart.write(static_cast<uint8_t>(value[i]));
+    }
+    stm32Uart.flush();
+    DEBUG_PRINTLN("BLE command forwarded to STM32");
+  }
+};
+
 void drainUart() {
   while (stm32Uart.available() > 0) {
     const int value = stm32Uart.read();
@@ -184,7 +196,10 @@ void setupBle() {
 
   BLEService *service = server->createService(kServiceUuid);
   notifyCharacteristic = service->createCharacteristic(
-      kCharacteristicUuid, BLECharacteristic::PROPERTY_NOTIFY);
+      kCharacteristicUuid, BLECharacteristic::PROPERTY_NOTIFY |
+                               BLECharacteristic::PROPERTY_WRITE |
+                               BLECharacteristic::PROPERTY_WRITE_NR);
+  notifyCharacteristic->setCallbacks(new CharacteristicCallbacks());
   BLE2902 *cccd = new BLE2902();
   cccd->setCallbacks(new DescriptorCallbacks());
   notifyCharacteristic->addDescriptor(cccd);
