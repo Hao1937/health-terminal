@@ -44,9 +44,9 @@
 #define BYTES_PER_SAMPLE 6u             /* SpO2 模式：RED(3)+IR(3) */
 
 #define SAMPLE_RATE_HZ 100u /* 有效 FIFO 速率（400Hz/4） */
-#define TARGET_SAMPLES 220u /* 约 2.2s：缩短等待，同时保留至少两个脉搏周期的机会 */
+#define TARGET_SAMPLES 300u /* 约 3s：覆盖多个脉搏周期，避免静息心率漏检 */
 #define MIN_SAMPLES 64u     /* 少于此认为没放手指/信号太短 */
-#define MEASURE_TIMEOUT_MS 3000u
+#define MEASURE_TIMEOUT_MS 4000u
 
 static int wr_reg(uint8_t reg, uint8_t val) {
   return i2c_mem_write(MAX30102_ADDR, reg, &val, 1);
@@ -162,7 +162,7 @@ hs_status_t max30102_init(void) {
 }
 
 hs_status_t max30102_measure(hs_sample_t *out) {
-  /* 样本缓冲放静态区，避免占用主循环栈（200*4*2=1600B） */
+  /* 样本缓冲放静态区，避免占用主循环栈（300*4*2=2400B） */
   static int32_t ir_buf[TARGET_SAMPLES];
   static int32_t red_buf[TARGET_SAMPLES];
 
